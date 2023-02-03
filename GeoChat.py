@@ -17,6 +17,36 @@ from FindIdentical_tool           import Find_Identical_Byfield
 from Simplify_Polygon             import Simplify_Polygons
 from SplitLineAtVertices          import Split_Line_By_Vertex_tool  
 from FeatureToPolygon_tool        import Feature_to_polygon
+from FindLayers                   import find_layers_main,data_SETL
+from Clip_managment               import multiClip
+
+def delete_if_exist(layers):
+    for layer in layers:
+        if arcpy.Exists(layer):
+            try:
+                arcpy.Delete_management(layer)
+            except:
+                pass
+
+
+def add_field(fc,field,Type = 'TEXT'):
+    TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
+    if not TYPE:
+        arcpy.AddField_management (fc, field, Type, "", "", 500)
+
+def find_data_source(sentences):
+    path_dataSorce = ''
+    sentences        = [''] + sentences.split()
+    length           = len(sentences)
+    for i in range(length):
+        full_search = ''
+        for j in range(i+1,length):
+            words = sentences[j]
+            full_search += words + ' '
+            if os.path.exists(full_search):
+                path_dataSorce = full_search
+    return path_dataSorce
+
 
 def find_number_in_sentance(text):
     number = re.findall(r'\b\d+\b', text)
@@ -70,6 +100,7 @@ def find_tool_to_use(sentences,tools_dict):
                     similar_sentence = match_ratio
                     tool_pick        = tool
 
+    # get the right tool from the tool names options
     for key in tools_dict.keys():
         if tool_pick in tools_dict[key][2]:
             tool_pick = key
@@ -89,6 +120,7 @@ def find_Layer_to_use(dict_all_layers,sentences,tool_geom_check,out_puts,is_seco
         2) sentences       : sentences input by user
         3) tool_geom_check : geometry that the tool can work on ['Polygon','Polyline','Point']
         4) out_puts        : list of all layers that are out_put layers from prior tools
+        5) is_seconed_input: remove the first layer so layer wont be same as the first input
     [OUTPUT] -
         1) layer_pick      : layer that is picked to use
         2) similar_word    : the similarity between the layer and the input by user
@@ -97,10 +129,13 @@ def find_Layer_to_use(dict_all_layers,sentences,tool_geom_check,out_puts,is_seco
     list_layers     = list(dict_all_layers.keys())
 
     # delete the layer that is not in the same geometry as accepted in the tool
-    layer_to_run_on = [layer for layer in list_layers if arcpy.Describe(dict_all_layers[layer]).shapeType in tool_geom_check]
+    if tool_geom_check:
+        layer_to_run_on = [layer for layer in list_layers if arcpy.Describe(dict_all_layers[layer]).shapeType in tool_geom_check]
+    else:
+        layer_to_run_on = list_layers
+        arcpy.AddMessage('No geometry check')
 
     sentences       = sentences.split()
-
     similar_word = 0
     layer_pick   = ''
     for layer in layer_to_run_on:
@@ -121,7 +156,10 @@ def find_Layer_to_use(dict_all_layers,sentences,tool_geom_check,out_puts,is_seco
         if similar_word < 0.5:
             if len(out_puts) > 1:
                 layer_pick = sorted(layer_pick)
-                layer_pick = layer_pick[-1]
+                if layer_pick:
+                    layer_pick = layer_pick[-1]
+                else:
+                    layer_pick = ''
             else:
                 layer_pick = out_puts[0]
             similar_word = 1
@@ -230,8 +268,12 @@ tools_dict = {
     'join fields'          : [arcpy.JoinField_management,['Polygon','Polyline','Point'] ,['join fields','join field', 'connect field']],
     'Spatial Join'         : [arcpy.SpatialJoin_analysis,['Polygon','Polyline','Point'] ,['spatial join','by location']],
     'Feature_to_polygon'   : [Feature_to_polygon        ,['Polygon','Polyline','Point'] ,['to polygon','feature to polygon']],
-}
-
+    'find layers'          : [find_layers_main          ,['']                           ,['find Layers','locate layers','map layers',
+                                                                                          'find all layers','find raster','go to','zoom to']],
+    'create field'         : [add_field                 ,['Polygon','Polyline','Point'] ,['add field','create field','create new field']],
+    'multiClip'            : [multiClip                 ,['Polygon']                    ,['multiClip','multi clip', 'clip all',
+                                                                                          'clip all layers','clip']]                                                                                  
+    }
 
 def if_name_close_to_list_names(name,list_names):
     ans = [i for i in list_names if SequenceMatcher(None, name.lower(), i.lower()).ratio() > 0.7]
@@ -257,14 +299,101 @@ def get_all_fields_in_layer(layer,sentance,fields_out:list):
 
     return new_fields
 
+def find_city(data_SETL,sentance):
+    cities = [i[1] for i in data_SETL]
+    sentance = sentance.split()
+    city_final = ''
+    for city in cities:
+        similar_field = 0
+        for word in sentance:
+            word = word.lower()
+            city = city.lower()
+            match_ratio = SequenceMatcher(None, word, city).ratio()
+            if match_ratio > similar_field:
+                similar_field =  match_ratio
+                if match_ratio > 0.7:
+                    city_final = city
+    return city_final
 
 
+def find_type_in_text(sentences):
+
+    sentences = sentences.split()
+    types = {'TEXT':['string','text'],'DOUBLE':['decimal','double','float'],
+            'LONG':['long','short','integer'],'DATE':['date','time']}
+    flat_list = [item for sublist in [types[key] for key in types] for item in sublist]
+    type_     = ''
+    score     = 0
+    type_pick = ''
+    for word in sentences:
+        for type_word in flat_list:
+            word = word.lower()
+            match_ratio = SequenceMatcher(None, word, type_word).ratio()
+            if match_ratio > score:
+                score = match_ratio
+                if match_ratio > 0.7:
+                    type_ = type_word
+
+    for key in types.keys():
+        if type_ in types[key]:
+            type_pick = key
+            break
+        
+    return type_pick
+
+
+def find_word_after(text, keywords):
+    words = text.split()
+    for i, word in enumerate(words):
+        if word in keywords:
+            try:
+                return words[i + 1]
+            except IndexError:
+                return None
+    return None
+
+def find_word_after(text):
+    keywords    = ['name','names','field','fields','column','columns']
+    words = text.split()
+    for i, word in enumerate(words):
+        if word in keywords:
+            try:
+                if words[i + 1] == 'to':
+                    continue
+                if words[i + 1] in keywords:
+                    return words[i + 2]
+                return words[i + 1]
+            except IndexError:
+                return None
+    return None
+
+
+def getLayerOnMap(path_layer):
+    if not arcpy.Exists(path_layer):return 
+
+    aprx = arcpy.mp.ArcGISProject('CURRENT')
+    aprxMap = aprx.listMaps("Map")[0] 
+    lyr = aprxMap.addDataFromPath(path_layer)
+    # aprxMap.addLayer(lyr)
+    aprx.activeView
+
+    del aprxMap
+    del aprx
+
+
+
+
+print (__name__)
 if __name__ == '__main__':
+    print ('start')
     # sentences       = 'take layer sett and delete identical' 
     sentences = arcpy.GetParameterAsText(0)
 
+    # sentences = r'C:\Users\Administrator\Desktop\ArcpyToolsBox\test final all layers haifa'
+
     # get all layers from the content of the project
-    aprx_path                = "CURRENT"     #C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
+    aprx_path                = r"CURRENT"
+    # aprx_path                = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
     dict_all_layers,out_puts = get_all_layers_from_content(aprx_path)
 
     # return the tool that the user want to use
@@ -277,8 +406,10 @@ if __name__ == '__main__':
     layer_pick,similar_word = find_Layer_to_use(dict_all_layers,sentences,tool_geom_check,out_puts)
 
     # get the path of the input layer
-    layer_input_path   = dict_all_layers[layer_pick]
-
+    if dict_all_layers.get(layer_pick):
+        layer_input_path   = dict_all_layers[layer_pick]
+    else:
+        layer_input_path   = ''
     # get the path of the output layer
     out_put = create_name_output_layer(layer_input_path)
 
@@ -288,13 +419,14 @@ if __name__ == '__main__':
     # run the tool
     arcpy.AddMessage(f"INPUT : {layer_input_path}")
     arcpy.AddMessage(f"TOOL  : {tool_pick}")
-    arcpy.AddMessage(f"OUTPUT: {out_put}")
+    # arcpy.AddMessage(f"OUTPUT: {out_put}")
     
     # One input layer, one field, one output layer
     if tool_pick == 'delete identical':
         layer_field = run_over_fields_for_matching_layers([layer_input_path],sentences)
         field_to_use = layer_field[layer_input_path]
         tool_activate(layer_input_path,field_to_use,out_put)
+        getLayerOnMap(out_put)
 
     # One input layer, one field
     if tool_pick == 'find identical':
@@ -305,6 +437,7 @@ if __name__ == '__main__':
     # One input layer, one output layer
     if tool_pick in ('vertiex to point','topology','polygon to line','eliminate','split line by vertex','Feature_to_polygon'):
         tool_activate(layer_input_path,out_put)
+        getLayerOnMap(out_put)
 
     # Two input layer, one output layer, Swich if empty
     if (tool_pick == 'erase'):
@@ -316,6 +449,7 @@ if __name__ == '__main__':
         if int(str(arcpy.GetCount_management(out_put))) == 0:
             arcpy.Delete_management(out_put)
             tool_activate(layer_input_path2,layer_input_path,out_put)
+            getLayerOnMap(out_put)
 
     # Two input layer, one output layer
     if (tool_pick == 'Spatial Join'):
@@ -324,6 +458,7 @@ if __name__ == '__main__':
         layer_input_path2   = dict_all_layers[layer_pick2]
 
         tool_activate(layer_input_path,layer_input_path2,out_put)
+        getLayerOnMap(out_put)
 
     # Two input layer, one output layer, one number
     if tool_pick == 'snap':
@@ -333,6 +468,7 @@ if __name__ == '__main__':
 
         layer_input_path2   = dict_all_layers[layer_pick2]
         tool_activate(layer_input_path,layer_input_path2,out_put,distance)
+        getLayerOnMap(layer_input_path2)
 
     # One input layer, one output layer, one number
     if tool_pick in ('Simplify','buffer'):
@@ -345,6 +481,38 @@ if __name__ == '__main__':
                                     ['Polygon','Polyline','Point'],out_puts,layer_pick)
         layer_input_path2   = dict_all_layers[layer_pick2]
         tool_activate([layer_input_path,layer_input_path2],out_put)
+        getLayerOnMap(out_put)
+
+    if tool_pick == 'find layers':
+        if ('out_put' in layer_input_path) or (layer_input_path == ''):
+            layer_input_path            = find_city(data_SETL,sentences)
+
+        data_source = find_data_source(sentences)
+        tool_activate(layer_input_path,data_source)
+
+    if tool_pick == 'create field':
+
+        field_to_add = find_word_after   (sentences)
+        type_        = find_type_in_text (sentences)
+        tool_activate(layer_input_path,field_to_add,type_)
+
+    if tool_pick == 'multiClip':
+        dissolve_fields = get_all_fields_in_layer(layer_input_path,sentences,[])
+        data_source = find_data_source(sentences)
+        if data_source == '':
+            layer_pick2,similar_word2 = find_Layer_to_use(dict_all_layers,sentences,
+                                    ['Polygon','Polyline','Point'],out_puts,layer_pick)
+            layer_input_path2   = dict_all_layers[layer_pick2]
+            data_source = layer_input_path2
+
+        folder_out = os.path.dirname(layer_input_path)
+        if folder_out.endswith('gdb'):
+            folder_out = os.path.dirname(folder_out)
+
+        arcpy.AddMessage(f"dissolve fields: {dissolve_fields}")
+        arcpy.AddMessage(f"data source: {data_source}")
+        arcpy.AddMessage(f"folder out: {folder_out}")
+        multiClip (layer_input_path,dissolve_fields,data_source,'false',folder_out,'GDB')
 
 
     if tool_pick == 'join fields':
@@ -362,24 +530,5 @@ if __name__ == '__main__':
             layer_input_path  = dict_all_layers[layer_pick2]
             layer_input_path2 = dict_all_layers[layer_pick]
         
-        arcpy.AddMessage(connect_fields)
         tool_activate(layer_input_path,field_to_use,layer_input_path2,field_to_use2,connect_fields)
-
-
-# openai.api_key = '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'
-
-# # Generate text with the GPT-3 model
-# model_engine = "text-davinci-002"
-# prompt = "Once upon a time, there was a"
-
-# completions = openai.Completion.create(
-#     engine=model_engine,
-#     prompt=prompt,
-#     max_tokens=1024,
-#     n=1,
-#     stop=None,
-#     temperature=0.5,
-# )
-
-# message = completions.choices[0].text
-# print(message)
+        getLayerOnMap(layer_input_path2)
