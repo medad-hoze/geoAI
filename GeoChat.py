@@ -4,6 +4,8 @@ import arcpy,os,json
 import pandas as pd
 import re,sys
 from difflib import SequenceMatcher
+import tempfile
+
 # import openai
 
 from DeleteIdentical_tool         import Delete_Identical_Byfield
@@ -19,6 +21,65 @@ from SplitLineAtVertices          import Split_Line_By_Vertex_tool
 from FeatureToPolygon_tool        import Feature_to_polygon
 from FindLayers                   import find_layers_main,data_SETL
 from Clip_managment               import multiClip
+from Raster_to_Polygon_tool       import RasterToPolygon
+
+from osgeo import ogr
+from osgeo import osr
+from osgeo import gdal
+
+
+def set_ISR(filename):
+    target_srs = 'EPSG:2039'
+    ds = gdal.Open(filename, gdal.GA_Update)
+    gdal.Warp(ds, ds, dstSRS=target_srs)
+    ds = None
+
+def RasterToPolygon(filename,out_put):
+
+
+    set_ISR(filename)
+    ds  = gdal.Open( filename )
+
+        # def polygonize(self,shp_path):
+    # mapping between gdal type and ogr field type
+    type_mapping = {gdal.GDT_Byte: ogr.OFTInteger,
+                    gdal.GDT_UInt16: ogr.OFTInteger,
+                    gdal.GDT_Int16: ogr.OFTInteger,
+                    gdal.GDT_UInt32: ogr.OFTInteger,
+                    gdal.GDT_Int32: ogr.OFTInteger,
+                    gdal.GDT_Float32: ogr.OFTReal,
+                    gdal.GDT_Float64: ogr.OFTReal,
+                    gdal.GDT_CInt16: ogr.OFTInteger,
+                    gdal.GDT_CInt32: ogr.OFTInteger,
+                    gdal.GDT_CFloat32: ogr.OFTReal,
+                    gdal.GDT_CFloat64: ogr.OFTReal}
+
+  
+    srcband       = ds.GetRasterBand (1)
+    dst_layername = "Shape"
+
+    # Create polygon
+    shp_path     = os.path.dirname(filename) + '\\' + 'temp.shp'
+    drv          = ogr.GetDriverByName      ("ESRI Shapefile")
+    dst_ds       = drv.CreateDataSource     (shp_path)
+    sr = osr.SpatialReference()
+    sr.ImportFromEPSG(2039)
+    dst_layer    = dst_ds.CreateLayer       (dst_layername, sr,ogr.wkbPolygon)
+    raster_field = ogr.FieldDefn            ('id', type_mapping[srcband.DataType]) # get gdal based field type to ogr 
+
+    dst_layer.CreateField     (raster_field)
+    gdal.Polygonize           (srcband, srcband, dst_layer, 0,['id'], callback=None)
+
+    dst_ds.Destroy()
+
+    del dst_layer
+    del srcband
+    
+    arcpy.Select_analysis   (shp_path,out_put)
+    arcpy.Delete_management (shp_path)
+
+
+
 
 def delete_if_exist(layers):
     for layer in layers:
@@ -67,7 +128,7 @@ def get_all_layers_from_content(aprx_path = 'CURRENT'):
     for map in list_map:
         list_layers = map.listLayers('*')
         for layer in list_layers:
-            if layer.isFeatureLayer:
+            if layer.isFeatureLayer or layer.isRasterLayer:
                 dict_all_layers[layer.name] = layer.dataSource
                 if 'out_put' in layer.name.lower():
                     outputs.append(layer.name)
@@ -75,10 +136,16 @@ def get_all_layers_from_content(aprx_path = 'CURRENT'):
     return dict_all_layers,outputs
 
 
-def find_tool_to_use(sentences,tools_dict):
+def find_tool_to_use(sentences,tools_dict,dict_all_layers = ''):
     '''
     Find the tool to use based on the sentences input by user 
     '''
+
+    if dict_all_layers != '':
+        layer_pick,similar_word = find_Layer_to_use(dict_all_layers,sentences,[''],'')
+        if layer_pick.endswith('.tif'):
+            tools_dict =  {k: v for k, v in tools_dict.items() if 'raster' in v[1]}
+
     tools_list       = []
     for key in tools_dict.keys():
         tools_list += tools_dict[key][2]
@@ -100,7 +167,6 @@ def find_tool_to_use(sentences,tools_dict):
                     similar_sentence = match_ratio
                     tool_pick        = tool
 
-    
     # get the right tool from the tool names options
     for key in tools_dict.keys():
         if tool_pick.strip() in tools_dict[key][2]:
@@ -128,9 +194,10 @@ def find_Layer_to_use(dict_all_layers,sentences,tool_geom_check,out_puts,is_seco
     '''
 
     list_layers     = list(dict_all_layers.keys())
-
+    is_raster       = [layer for layer in list_layers if not layer.endswith('.tif')]
+    arcpy.AddMessage(is_raster)
     # delete the layer that is not in the same geometry as accepted in the tool
-    if tool_geom_check:
+    if tool_geom_check and len(is_raster) == 0:
         layer_to_run_on = [layer for layer in list_layers if arcpy.Describe(dict_all_layers[layer]).shapeType in tool_geom_check]
     else:
         layer_to_run_on = list_layers
@@ -143,6 +210,8 @@ def find_Layer_to_use(dict_all_layers,sentences,tool_geom_check,out_puts,is_seco
         for word in sentences:
             layer_low = layer.lower()
             word      = word.lower()
+            if layer_low.endswith('.tif'):
+                layer_low = layer_low.replace('.tif','')
             match_ratio = SequenceMatcher(None, layer_low, word).ratio()
             if is_seconed_input == layer: 
                 continue
@@ -200,7 +269,6 @@ def run_over_fields_for_matching_layers(layers,sentences):
     return field_pick
 
 
-
 def run_over_2layers_for_maching_fields(layer1,layer2,sentences = ''):
 
     fields_input = sentences.split()
@@ -225,9 +293,7 @@ def run_over_2layers_for_maching_fields(layer1,layer2,sentences = ''):
                         similar_field     = match_ratio
                         field_pick[layer] = field_layer_low
     
-
     return field_pick
-
 
 
 def create_name_output_layer(layer_input_path):
@@ -254,26 +320,28 @@ def create_name_output_layer(layer_input_path):
 
 tools_dict = {
 
-    'delete identical'     : [Delete_Identical_Byfield  ,['Polygon','Polyline','Point'] ,['delete identical']],
-    'polygon to line'      : [PolygonToLine             ,['Polygon']                    ,['to line','polygon to line']],
-    'erase'                : [analysis_Erase            ,['Polygon']                    ,['delete','erase']],
-    'topology'             : [CreateTopology            ,['Polygon']                    ,['topology','create topology']],
-    'vertiex to point'     : [FeatureVerticesToPoints   ,['Polygon','Polyline']         ,['vertiex to point','vertices to point','get vertices']],
-    'snap'                 : [Snap                      ,['Polygon','Polyline']         ,['snap']],
-    'eliminate'            : [Eliminate                 ,['Polygon']                    ,['slivers','eliminate']],
-    'find identical'       : [Find_Identical_Byfield    ,['Polygon','Polyline','Point'] ,['find identical']],
-    'simplify'             : [Simplify_Polygons         ,['Polygon','Polyline']         ,['remove vertices','simplify']],
-    'split line by vertex' : [Split_Line_By_Vertex_tool ,['Polyline']                   ,['split line by vertex','by vertex','by vertices']],
-    'intersect'            : [arcpy.Intersect_analysis  ,['Polygon','Polyline','Point'] ,['intersect','intersects']],
-    'buffer'               : [arcpy.Buffer_analysis     ,['Polygon','Polyline','Point'] ,['buffer']],
-    'join fields'          : [arcpy.JoinField_management,['Polygon','Polyline','Point'] ,['join fields','join field', 'connect field']],
-    'Spatial Join'         : [arcpy.SpatialJoin_analysis,['Polygon','Polyline','Point'] ,['spatial join','by location']],
-    'Feature_to_polygon'   : [Feature_to_polygon        ,['Polygon','Polyline','Point'] ,['to polygon','feature to polygon']],
-    'find layers'          : [find_layers_main          ,['']                           ,['find Layers','locate layers','map layers',
-                                                                                          'find all layers','find raster','go to','zoom to']],
-    'create field'         : [add_field                 ,['Polygon','Polyline','Point'] ,['add field','create field','create new field']],
-    'multiClip'            : [multiClip                 ,['Polygon']                    ,['multiClip','multi clip', 'clip all',
-                                                                                          'clip all layers','clip']]                                                                                  
+    'delete identical'     : [Delete_Identical_Byfield        ,['Polygon','Polyline','Point'] ,['delete identical']],
+    'polygon to line'      : [PolygonToLine                   ,['Polygon']                    ,['to line','polygon to line']],
+    'erase'                : [analysis_Erase                  ,['Polygon']                    ,['delete','erase']],
+    'topology'             : [CreateTopology                  ,['Polygon']                    ,['topology','create topology']],
+    'vertiex to point'     : [FeatureVerticesToPoints         ,['Polygon','Polyline']         ,['vertiex to point','vertices to point','get vertices']],
+    'snap'                 : [Snap                            ,['Polygon','Polyline']         ,['snap']],
+    'eliminate'            : [Eliminate                       ,['Polygon']                    ,['slivers','eliminate']],
+    'find identical'       : [Find_Identical_Byfield          ,['Polygon','Polyline','Point'] ,['find identical']],
+    'simplify'             : [Simplify_Polygons               ,['Polygon','Polyline']         ,['remove vertices','simplify']],
+    'split line by vertex' : [Split_Line_By_Vertex_tool       ,['Polyline']                   ,['split line by vertex','by vertex','by vertices']],
+    'intersect'            : [arcpy.Intersect_analysis        ,['Polygon','Polyline','Point'] ,['intersect','intersects']],
+    'buffer'               : [arcpy.Buffer_analysis           ,['Polygon','Polyline','Point'] ,['buffer']],
+    'join fields'          : [arcpy.JoinField_management      ,['Polygon','Polyline','Point'] ,['join fields','join field', 'connect field']],
+    'Spatial Join'         : [arcpy.SpatialJoin_analysis      ,['Polygon','Polyline','Point'] ,['spatial join','by location']],
+    'Feature_to_polygon'   : [Feature_to_polygon              ,['Polygon','Polyline','Point'] ,['to polygon','feature to polygon']],
+    'find layers'          : [find_layers_main                ,['']                           ,['find Layers','locate layers','map layers',
+                                                                                                'find all layers','find raster','go to','zoom to']],
+    'create field'         : [add_field                       ,['Polygon','Polyline','Point'] ,['add field','create field','create new field']],
+    'multiClip'            : [multiClip                       ,['Polygon']                    ,['multiClip','multi clip', 'clip all',
+                                                                                                'clip all layers','clip']],
+    'feature to point'     : [arcpy.FeatureToPoint_management ,['Polygon','Polyline']         ,['feature to point','to point','to points']],
+    'raster to polygon'    : [RasterToPolygon                 ,['raster']                     ,['raster to polygon','to polygon','as raster','to shp','to shapefile','to layer']],                                                                       
     }
 
 def if_name_close_to_list_names(name,list_names):
@@ -382,7 +450,24 @@ def getLayerOnMap(path_layer):
     del aprx
 
 
-
+def find_type_for_feature_to_point(sentance):
+    types_accepted = ["INSIDE","CENTROID"]
+    sentance = sentance.split()
+    type_ = ''
+    score = 0
+    for word in sentance:
+        for type_word in types_accepted:
+            word = word.lower()
+            match_ratio = SequenceMatcher(None, word, type_word).ratio()
+            if match_ratio > score:
+                score = match_ratio
+                if match_ratio > 0.7:
+                    type_ = type_word
+    
+    if type_ == '':
+        type_ = 'INSIDE'
+    
+    return type_
 
 print (__name__)
 if __name__ == '__main__':
@@ -398,7 +483,7 @@ if __name__ == '__main__':
     dict_all_layers,out_puts = get_all_layers_from_content(aprx_path)
 
     # return the tool that the user want to use
-    tool_pick,match_ratio   = find_tool_to_use(sentences,tools_dict)
+    tool_pick,match_ratio   = find_tool_to_use(sentences,tools_dict,dict_all_layers)
 
     # return the the geometry that the tool can work on : ['Polygon','Polyline','Point']
     tool_geom_check  = tools_dict[tool_pick][1]
@@ -421,7 +506,12 @@ if __name__ == '__main__':
     arcpy.AddMessage(f"INPUT : {layer_input_path}")
     arcpy.AddMessage(f"TOOL  : {tool_pick}")
     # arcpy.AddMessage(f"OUTPUT: {out_put}")
-    
+
+    if tool_pick == 'feature to point':
+        type_ = find_type_for_feature_to_point(sentences)
+        tool_activate (layer_input_path,out_put,type_)
+        getLayerOnMap(out_put)
+        
     # One input layer, one field, one output layer
     if tool_pick == 'delete identical':
         layer_field = run_over_fields_for_matching_layers([layer_input_path],sentences)
@@ -454,8 +544,6 @@ if __name__ == '__main__':
             sys.exit(1)
 
         getLayerOnMap(out_put)
-        arcpy.AddMessage(layer_input_path2)
-        arcpy.AddMessage(out_put)
 
     # Two input layer, one output layer
     if (tool_pick == 'Spatial Join'):
@@ -538,3 +626,14 @@ if __name__ == '__main__':
         
         tool_activate(layer_input_path,field_to_use,layer_input_path2,field_to_use2,connect_fields)
         getLayerOnMap(layer_input_path2)
+
+    if tool_pick == 'raster to polygon':
+    
+        folder = os.path.dirname(layer_input_path) 
+        if folder.endswith('gdb'):
+            folder = os.path.dirname(folder)
+        
+        out_put = folder + '\\' + 'raster.shp'
+
+        tool_activate(layer_input_path,out_put)
+        getLayerOnMap(out_put)
