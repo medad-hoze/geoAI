@@ -2,7 +2,7 @@
 
 import arcpy,os,json
 import pandas as pd
-import re
+import re,sys
 from difflib import SequenceMatcher
 # import openai
 
@@ -100,9 +100,10 @@ def find_tool_to_use(sentences,tools_dict):
                     similar_sentence = match_ratio
                     tool_pick        = tool
 
+    
     # get the right tool from the tool names options
     for key in tools_dict.keys():
-        if tool_pick in tools_dict[key][2]:
+        if tool_pick.strip() in tools_dict[key][2]:
             tool_pick = key
             break
 
@@ -257,7 +258,7 @@ tools_dict = {
     'polygon to line'      : [PolygonToLine             ,['Polygon']                    ,['to line','polygon to line']],
     'erase'                : [analysis_Erase            ,['Polygon']                    ,['delete','erase']],
     'topology'             : [CreateTopology            ,['Polygon']                    ,['topology','create topology']],
-    'vertiex to point'     : [FeatureVerticesToPoints   ,['Polygon','Polyline']         ,['vertiex to point','Vertices to point']],
+    'vertiex to point'     : [FeatureVerticesToPoints   ,['Polygon','Polyline']         ,['vertiex to point','vertices to point','get vertices']],
     'snap'                 : [Snap                      ,['Polygon','Polyline']         ,['snap']],
     'eliminate'            : [Eliminate                 ,['Polygon']                    ,['slivers','eliminate']],
     'find identical'       : [Find_Identical_Byfield    ,['Polygon','Polyline','Point'] ,['find identical']],
@@ -450,6 +451,11 @@ if __name__ == '__main__':
             arcpy.Delete_management(out_put)
             tool_activate(layer_input_path2,layer_input_path,out_put)
             getLayerOnMap(out_put)
+            sys.exit(1)
+
+        getLayerOnMap(out_put)
+        arcpy.AddMessage(layer_input_path2)
+        arcpy.AddMessage(out_put)
 
     # Two input layer, one output layer
     if (tool_pick == 'Spatial Join'):
