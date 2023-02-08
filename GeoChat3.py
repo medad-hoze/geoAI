@@ -25,10 +25,16 @@ class Tools_manager():
         len_all_current_tools = 0
         self.picked_tool      = None
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
+        print ('####################     Tools_manager     ###################') 
+        
         print ('number of tools from source: ' + str(self.len_InputTools))
         print ('current tools: ' + str(self.len_all_current_tools))
         print ('picked tool: ' + str(self.picked_tool.id_))
+
+    def __str__(self) -> str:
+        for tool in self.all_tools:
+            tool.__str__()
 
     def Get_len_tools(self):
         if self.len_InputTools == 0:
@@ -90,6 +96,7 @@ class Tools():
         self.isoutput     = isoutput
 
     def __str__(self) -> str:
+        print ('####################     Tools     ###################')
         print ('id: ' + self.id_ + '\n' + 'Geotypes:' + str(self.Geotypes) + '\n' + 'keywords:' + str(self.keywords) +
                '\n' + 'num_input:' + str(self.num_input) + '\n' + 'fields:' + str(self.fields) + '\n' + 'isoutput:' + str(self.isoutput))
 
@@ -109,20 +116,17 @@ class InputManager():
         self.all_inputs.append(InputAprx)
 
     def __repr__(self) -> str:
-        
-        print ('main Input: ' + self.mainInput.layer + '\n' + 'secon fInputs: ' + self.seconfInputs.layer + '\n'
+        print ("####################   InputManager   ########################")
+        main_layer   = self.mainInput.layer if self.mainInput else None
+        second_layer = self.seconfInputs.layer if self.seconfInputs else None
+        print ('main Input: ' + str(main_layer) + '\n' + 'secon fInputs: ' + str(second_layer) + '\n'
                  + 'all Raster: ' + str(self.allRaster) + '\n' + 'all Vectors: ' + str(self.allVectors) 
                  + '\n' + 'count Inputs: ' + str(self.countInputs))
 
     def __str__(self) -> str:
-        number = 1
         for input_ in self.all_inputs:
-            print(' ########  Number = ' + str(number) + '  ########')
-            print ('layer name:   ' + input_.layer + '\n', 'type:        ' + input_.type + '\n', 'data source: ' + 
-            input_.data_source + '\n', 'is output:   ' + str(input_.isOutput) + '\n', 'empty:       ' + str(input_.empty)
-            + '\n', 'geom type:   ' + input_.geomType + '\n' + 'index:       ' + str(input_.index) 
-            + '\n' + 'score:       ' + str(input_.score) +'\n' + 'Can be first input: ' + str(input_.Can_be_first_input))
-            number += 1
+            input_.__str__()
+
 
         print ('number of inputs: ' + str(self.countInputs))
 
@@ -164,15 +168,6 @@ class InputManager():
             if input_.layer != self.mainInput.layer:
                 self.seconfInputs = input_
 
-    # def remove_inputs(self,input_):
-    #     self.all_inputs = [i for i in self.all_inputs if i[0] != input_]
-
-
-    # def insert_inputs(self):
-    #     self.all_inputs.append([self.layer,self.type,self.data_source,self.isOutput,self.empty,self.geomType])
-    #     self.dict_all_inputs_archive = {i[0]:i[1:] for i in self.all_inputs}
-
-
 
 class InputAprx():
 
@@ -190,14 +185,18 @@ class InputAprx():
         self.index              = 0
         self.Can_be_first_input = True
         self.fields_found       = []
-        self.fields_macth       = []
+        self.fields_match       = []
 
         self.is_empty()
         self.add_fields()
 
     def __str__(self) -> str:
-        print ('layer:' + self.layer +'\n' + 'type: ' + self.type + '\n' 
-        + "fields found: " + str(self.fields_found))
+            print(' #################  InputAprx   ###############')
+            print ('layer name:   ' + self.layer + '\n', 'type:        ' + self.type + '\n', 'data source: ' + 
+            self.data_source + '\n', 'is output:   ' + str(self.isOutput) + '\n', 'empty:       ' + str(self.empty)
+            + '\n', 'geom type:   ' + self.geomType + '\n' + 'index:       ' + str(self.index) 
+            + '\n' + 'score:       ' + str(self.score) +'\n' + 'Can be first input: ' + str(self.Can_be_first_input)
+            + '\n' + 'fields match: ' + str(self.fields_match))
 
     def is_empty(self):
         if self.type == 'FC' or self.type == 'SHP':
@@ -239,9 +238,40 @@ def get_all_layers_from_content(aprx_path = 'CURRENT'):
 
 
 class Responed():
-    def __init__(self,message = '',type_ = 'text',data = None):
-        self.message = message
+    def __init__(self):
+        self.error = False
+        self.num_input_needed_from_tool = None
+        self.num_main_and_second_inputs = None
 
+        self.fields_needed              = None
+        self.len_fields_found           = None
+
+        self.fields_needed_tool         = None
+        self.fields_found_input         = None
+
+    def update(self):
+        self.len_fields_found = InputsManager.countInputs
+        self.fields_needed    = Tools_store.picked_tool.fields
+
+        self.num_input_needed_from_tool = Tools_store.picked_tool.num_input
+        if InputsManager.mainInput is not None:
+            self.num_main_and_second_inputs = 1
+        if InputsManager.seconfInputs is not None:
+            self.num_main_and_second_inputs = 2
+
+        self.fields_needed_tool = Tools_store.picked_tool.fields
+        if InputsManager.mainInput is not None:
+            self.fields_found_input = len(InputsManager.mainInput.fields_found)
+
+
+    def check_for_errors(self):
+        pass
+
+    def __str__(self) -> str:
+        print(' #################  Responed   ###############')
+        print ('error: ' + str(self.error) + '\n', 'num_input_needed_from_tool: ' + str(self.num_input_needed_from_tool),
+        '\n', 'num of main and second inputs: ' + str(self.num_main_and_second_inputs), '\n', 'fields_needed: ' + str(self.fields_needed),
+        '\n', 'len_fields_found: ' + str(self.len_fields_found), '\n', 'fields_needed_tool: ' + str(self.fields_needed_tool))
 
 
 class Sentance():
@@ -250,12 +280,14 @@ class Sentance():
         self.sentance            = sentance
         self.sentance_full  = sentance
         self.get_list_sentance()
-        self.list_sentance_full       = self.list_sentance[:]
+        self.list_sentance_full  = self.list_sentance[:]
 
 
     def __str__(self) -> str:
+        print ('#####################  Sentenace ########################')
         print ('sentance: ' + self.sentance)
         print ('sentance: ' + str(self.list_sentance))
+        print ('Full sentance: ' + str(self.sentance_full))
 
     def Count_sentance(self):
         return len(self.list_sentance)
@@ -329,36 +361,15 @@ def find_tool():
     Tools_store.keep_chosen_tools(tool_pick)
 
 
-
-
-
-
-def run_over_fields_for_input():
-    '''
-    [INFO]   - Run over all fields in the layer that is picked to use and find the field that is most similar to the input by user
-    [INPUT]  - get the closest field to the input layer 
-    [OUTPUT] - return a dict with the most similar field name to the input by user - {../sett : muni_heb}
-    '''
-    if Input_manager.mainInput == '': return
-
-    field_pick    = []
-    similar_field = 0
-    for field in Mysentance.list_sentance:
-        for field_layer in Input_manager.fields:
-            field_low       = field.lower()
-            field_layer_low = field_layer.lower()
-            match_ratio = SequenceMatcher(None, field_low, field_layer_low).ratio()
-            if match_ratio > similar_field:
-                if match_ratio > 0.7:
-                    similar_field     = match_ratio
-                    field_pick.append(field_layer)
-
-    if len(field_pick) == 0:
-        field_pick.append('Shape')
-
-    Input_manager.fieldsInput = field_pick
-
-
+def match_fields_from_input_to_layer():
+    for input_ in InputsManager.all_inputs:
+        for field in input_.fields_found:
+            for word in Mysentance.list_sentance:
+                field_name = field.lower()
+                word       = word.lower()
+                match_ratio = SequenceMatcher(None, field_name, word).ratio()
+                if match_ratio > 0.8:
+                    input_.fields_match.append(field)
 
 
 if __name__ == '__main__':
@@ -369,16 +380,16 @@ if __name__ == '__main__':
     aprx_path  = r"CURRENT"
     aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
 
-    InputsManager = InputManager ()
-    Tools_store   = Tools_manager()
-    Mysentance    = Sentance     (sentences)
+    InputsManager = InputManager  ()
+    Tools_store   = Tools_manager ()
+    get_Responed  = Responed      ()
+    Mysentance    = Sentance      (sentences)
 
     Tools_store.insertTools(tools_archive)
 
     get_all_layers_from_content(aprx_path)
 
     Mysentance    = Sentance(sentences)
-
 
     InputsManager.Count_inputs()
     Tools_store.remove_tools_by_inputLayers()
@@ -394,7 +405,17 @@ if __name__ == '__main__':
 
     InputsManager.Get_main_and_seconed_inputs()
 
-    
+    match_fields_from_input_to_layer()
+
+
+    get_Responed.update()
+
+    get_Responed.__str__()
+
+    # InputsManager.__str__()
+    # InputsManager.__repr__()
+    # Mysentance.__str__()
+    # Tools_store.__repr__()
     
 
 
