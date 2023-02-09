@@ -608,18 +608,21 @@ def getRasterOnMap(temp_layer,raster_RGB,intersects,folderName):
 
     rasterList = list(set([row[0] for row in arcpy.da.SearchCursor(intersects,[folderName])]))
 
-    aprx = arcpy.mp.ArcGISProject('CURRENT')
-    aprxMap = aprx.listMaps("Map")[0] 
+    try:
+        aprx = arcpy.mp.ArcGISProject('CURRENT')
+        aprxMap = aprx.listMaps("Map")[0] 
 
-    for row in rasterList:
-        lyr = aprxMap.addDataFromPath(row)
-        # aprxMap.addLayer(lyr)
-        aprx.activeView
+        for row in rasterList:
+            lyr = aprxMap.addDataFromPath(row)
+            # aprxMap.addLayer(lyr)
+            aprx.activeView
 
-    del aprxMap
-    del aprx
+        del aprxMap
+        del aprx
 
-    return intersects
+        return intersects
+    except:
+        print ('run on test mode')
 
 
 def removeRastersFromMap(mxd_path,removename):
@@ -737,7 +740,10 @@ def find_layers_main(city,Folder):
         get_settlement_to_layer  (data_SETL,city,out_put)
 
     if not arcpy.Exists(out_put): return
-    if out_put      :zoom_in(out_put)
+    try:
+        if out_put      :zoom_in(out_put)
+    except:
+        pass
 
     if Folder == '' : sys.exit(1)
 

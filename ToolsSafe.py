@@ -18,6 +18,7 @@ from FeatureToPolygon_tool        import Feature_to_polygon
 from FindLayers                   import find_layers_main,data_SETL
 from Clip_managment               import multiClip
 from Raster_to_Polygon_tool       import RasterToPolygon
+from Multi_FieldJoin_tool         import join_field
 
 def add_field(fc,field,Type = 'TEXT'):
     TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
@@ -31,29 +32,29 @@ tools_archive = [
                                                                                                                                                                         
     # '''
 
-    ['delete identical'     ,Delete_Identical_Byfield        ,['Polygon','Polyline','Point'] ,['delete identical']                 ,1,9,True],
+    ['delete identical'     ,Delete_Identical_Byfield        ,['Polygon','Polyline','Point'] ,['delete identical']                 ,1,1,True],
     ['polygon to line'      ,PolygonToLine                   ,['Polygon']                    ,['to line','polygon to line']        ,1,0,True],
-    ['erase'                ,analysis_Erase                  ,['Polygon']                    ,['delete','erase']                   ,2,0,True],
+    ['erase'                ,analysis_Erase                  ,['Polygon','Polyline','Point'] ,['delete','erase']                   ,2,0,True],
     ['topology'             ,CreateTopology                  ,['Polygon']                    ,['topology','create topology']       ,2,0,True],
     ['vertiex to point'     ,FeatureVerticesToPoints         ,['Polygon','Polyline']         ,['vertiex to point',      
                                                                                                'vertices to point','get vertices'] ,1,0,True],
     ['snap'                 ,Snap                            ,['Polygon','Polyline']         ,['snap']                             ,2,0,True],
     ['eliminate'            ,Eliminate                       ,['Polygon']                    ,['slivers','eliminate']              ,1,0,True],
-    ['find identical'       ,Find_Identical_Byfield          ,['Polygon','Polyline','Point'] ,['find identical']                   ,1,9,False],
+    ['find identical'       ,Find_Identical_Byfield          ,['Polygon','Polyline','Point'] ,['find identical']                   ,1,1,False],
     ['simplify'             ,Simplify_Polygons               ,['Polygon','Polyline']         ,['remove vertices','simplify']       ,1,0,True],
     ['split line by vertex' ,Split_Line_By_Vertex_tool       ,['Polyline']                   ,['split line by vertex',
                                                                                                'by vertex','by vertices']          ,1,0,True],
-    ['intersect'            ,arcpy.Intersect_analysis        ,['Polygon','Polyline','Point'] ,['intersect','intersects']           ,2,1,True],
+    ['intersect'            ,arcpy.Intersect_analysis        ,['Polygon','Polyline','Point'] ,['intersect','intersects']           ,2,0,True],
     ['buffer'               ,arcpy.Buffer_analysis           ,['Polygon','Polyline','Point'] ,['buffer']                           ,1,0,True],
-    ['join fields'          ,arcpy.JoinField_management      ,['Polygon','Polyline','Point'] ,['join fields','join field', 
-                                                                                               'connect field']                    ,2,99,False],
-    ['Spatial Join'         ,arcpy.SpatialJoin_analysis      ,['Polygon','Polyline','Point'] ,['spatial join','by location']       ,2,99,False],
-    ['Feature_to_polygon'   ,Feature_to_polygon              ,['Polygon','Polyline','Point'] ,['to polygon','feature to polygon']  ,1,0,True],
+    ['join fields'          ,join_field                      ,['Polygon','Polyline','Point'] ,['join fields','join field', 
+                                                                                               'connect field']                    ,2,2,False],
+    ['Spatial Join'         ,arcpy.SpatialJoin_analysis      ,['Polygon','Polyline','Point'] ,['spatial join','by location']       ,2,0,False],
+    ['Feature_to_polygon'   ,Feature_to_polygon              ,['Polygon','Polyline','Point'] ,['to polygon','feature to polygon']  ,1,0,False],
     ['find layers'          ,find_layers_main                ,['Polygon','Polyline','Point'] ,['find Layers','locate layers',
                                                                                                 'map layers', 'find all layers',
-                                                                                                'find raster','go to','zoom to']   ,1,0,False],
+                                                                                                'find raster','go to','zoom to']   ,0,0,False],
     ['create field'         ,add_field                       ,['Polygon','Polyline','Point'] ,['add field','create field',
-                                                                                                'create new field']                ,0,99,False],
+                                                                                                'create new field']                ,0,1,False],
     ['multiClip'            ,multiClip                       ,['Polygon']                    ,['multiClip','multi clip', 'clip all',
                                                                                                 'clip all layers','clip']          ,1,0,True],
     ['feature to point'     ,arcpy.FeatureToPoint_management ,['Polygon','Polyline']         ,['feature to point','create point',

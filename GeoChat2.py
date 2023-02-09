@@ -281,6 +281,9 @@ def create_out_put():
 
     gdb = os.path.dirname(Input_manager.dict_all_inputs_archive[Input_manager.mainInput][1])
 
+# [self.ToolActivate,self.Geotypes,self.keywords,self.num_input,self.fields,self.isoutput]
+
+
     data_tool = Tools_store.dict_tools[Tools_store.chosen_tool]
 
     if data_tool[3] == 0: return ''

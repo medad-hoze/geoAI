@@ -275,6 +275,7 @@ def Snap(layer,snap_to,out_put,distance):
 
             geoms = geom.GeomJson[geom.strType]
             rings_all = []
+            if not index_dis: continue
             if i[1] not in index_dis.keys(): continue
             dict_moveOrder = index_dis[i[1]]
             for part in geoms:

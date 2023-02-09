@@ -1,9 +1,10 @@
 
 
 
-import re
+import re,os
 import arcpy
 from difflib import SequenceMatcher
+
 
 def find_number_in_sentance(text):
     number = re.findall(r'\b\d+\b', text)
@@ -52,31 +53,96 @@ def find_type_in_text(sentences:list):
                 score = match_ratio
                 if match_ratio > 0.7:
                     type_ = type_word
+                    score = match_ratio
 
     for key in types.keys():
         if type_ in types[key]:
             type_pick = key
-            break
-        
+            return type_pick
     return type_pick
 
 
-# def create_out_put(gdb,all_inputss):
 
-#     data_tool = Tools_store.dict_tools[Tools_store.chosen_tool]
+def getLayerOnMap(path_layer,aprxMap = 'CURRENT'):
+    if not arcpy.Exists(path_layer):return 
 
-#     if data_tool[3] == 0: return ''
-#     out_put = [i[0] for i in all_inputss if 'out_put' in i[0].lower()]
-#     if out_put:
-#         out_put           = sorted(out_put)[-1]
-#         old_name_num      = out_put.split('_')[-1]
-#         old_name_num      = str(find_number_in_sentance(old_name_num))
-#         new_name_num      = str(int(old_name_num) + 1)
-#         name_output_layer = gdb + '\\' + out_put.replace(old_name_num,new_name_num)
-#     else:
-#         name_output_layer = gdb + '\\' + 'out_put_1'
+    aprx = arcpy.mp.ArcGISProject(aprxMap)
+    aprxMap = aprx.listMaps("Map")[0] 
+    lyr = aprxMap.addDataFromPath(path_layer)
+    # aprxMap.addLayer(lyr)
+    aprx.activeView
 
-#     if arcpy.Exists(name_output_layer +'\\' + '_Temp'):
-#         arcpy.Delete_management(name_output_layer +'\\' + '_Temp')
+    del aprxMap
+    del aprx
 
-#     return name_output_layer
+
+
+def create_out_put(InputsManager):
+
+    gdb     = os.path.dirname(InputsManager.mainInput.data_source)
+    out_put = [input_.layer for input_ in InputsManager.all_inputs if 'out_put' in input_.layer]
+
+    if out_put:
+        out_put           = sorted(out_put)[-1]
+        old_name_num      = out_put.split('_')[-1]
+        old_name_num      = str(find_number_in_sentance(old_name_num))
+        new_name_num      = str(int(old_name_num) + 1)
+        name_output_layer = gdb + '\\' + out_put.replace(old_name_num,new_name_num)
+    else:
+        name_output_layer = gdb + '\\' + 'out_put_1'
+
+    if arcpy.Exists(name_output_layer +'\\' + '_Temp'):
+        arcpy.Delete_management(name_output_layer +'\\' + '_Temp')
+
+    return name_output_layer
+
+
+def find_data_source(sentences):
+    path_dataSorce = ''
+    sentences        = [''] + sentences.split()
+    length           = len(sentences)
+    for i in range(length):
+        full_search = ''
+        for j in range(i+1,length):
+            words = sentences[j]
+            full_search += words + ' '
+            if os.path.exists(full_search):
+                path_dataSorce = full_search
+    return path_dataSorce
+
+
+def find_city(data_SETL,sentance):
+    cities = [i[1] for i in data_SETL]
+    sentance = sentance.split()
+    city_final = ''
+    for city in cities:
+        similar_field = 0
+        for word in sentance:
+            word = word.lower()
+            city = city.lower()
+            match_ratio = SequenceMatcher(None, word, city).ratio()
+            if match_ratio > similar_field:
+                similar_field =  match_ratio
+                if match_ratio > 0.7:
+                    city_final = city
+    return city_final
+
+
+def find_type_for_feature_to_point(sentance):
+    types_accepted = ["INSIDE","CENTROID"]
+    sentance = sentance.split()
+    type_ = ''
+    score = 0
+    for word in sentance:
+        for type_word in types_accepted:
+            word = word.lower()
+            match_ratio = SequenceMatcher(None, word, type_word).ratio()
+            if match_ratio > score:
+                score = match_ratio
+                if match_ratio > 0.7:
+                    type_ = type_word
+    
+    if type_ == '':
+        type_ = 'INSIDE'
+    
+    return type_
