@@ -165,7 +165,7 @@ def PolygonToLine(polygon,line_output):
         polygon (str)    : Path to the polygon feature class.
         line_output (str): Path to the polyline output .
     """
-
+    
     input_paramater_chack (polygon,polyon = True)
 
     createNewLayer        (line_output,polygon,'POLYLINE')

@@ -63,18 +63,19 @@ def find_type_in_text(sentences:list):
 
 
 
-def getLayerOnMap(path_layer,aprxMap = 'CURRENT'):
+def getLayerOnMap(path_layer):
     if not arcpy.Exists(path_layer):return 
+    try:
+        aprx = arcpy.mp.ArcGISProject('CURRENT')
+        aprxMap = aprx.listMaps("Map")[0] 
+        lyr = aprxMap.addDataFromPath(path_layer)
+        # aprxMap.addLayer(lyr)
+        aprx.activeView
 
-    aprx = arcpy.mp.ArcGISProject(aprxMap)
-    aprxMap = aprx.listMaps("Map")[0] 
-    lyr = aprxMap.addDataFromPath(path_layer)
-    # aprxMap.addLayer(lyr)
-    aprx.activeView
-
-    del aprxMap
-    del aprx
-
+        del aprxMap
+        del aprx
+    except:
+        pass
 
 
 def create_out_put(InputsManager):
@@ -108,6 +109,8 @@ def find_data_source(sentences):
             full_search += words + ' '
             if os.path.exists(full_search):
                 path_dataSorce = full_search
+
+    path_dataSorce = path_dataSorce.rstrip()
     return path_dataSorce
 
 

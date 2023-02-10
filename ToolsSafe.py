@@ -33,7 +33,8 @@ tools_archive = [
     # '''
 
     ['delete identical'     ,Delete_Identical_Byfield        ,['Polygon','Polyline','Point'] ,['delete identical']                 ,1,1,True],
-    ['polygon to line'      ,PolygonToLine                   ,['Polygon']                    ,['to line','polygon to line']        ,1,0,True],
+    ['polygon to line'      ,PolygonToLine                   ,['Polygon']                    ,['to line','polygon to line',
+                                                                                               'to polyline']                      ,1,0,True],
     ['erase'                ,analysis_Erase                  ,['Polygon','Polyline','Point'] ,['delete','erase']                   ,2,0,True],
     ['topology'             ,CreateTopology                  ,['Polygon']                    ,['topology','create topology']       ,2,0,True],
     ['vertiex to point'     ,FeatureVerticesToPoints         ,['Polygon','Polyline']         ,['vertiex to point',      

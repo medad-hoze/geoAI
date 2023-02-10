@@ -10,7 +10,6 @@ from operator import itemgetter
 from ToolsSafe import tools_archive
 from Utils import *
 import os
-
 from FindLayers import data_SETL
 
 
@@ -423,10 +422,10 @@ def FindInputs():
         index_in_text = 1
         for word in Mysentance.list_sentance:
             layer_low   = layer.layer.lower()
-            word_lower  = word.lower()
-            match_ratio = SequenceMatcher(None, layer_low, word_lower).ratio()
             if len(layer_low.split('.')) > 1:
                 layer_low = layer_low.split('.')[0]
+            word_lower  = word.lower()
+            match_ratio = SequenceMatcher(None, layer_low, word_lower).ratio()
             if match_ratio > 0.8:
                 layer.score = match_ratio
                 layer.index = index_in_text
@@ -453,6 +452,7 @@ def find_tool():
                     match_ratio = SequenceMatcher(None, full_search, tool_kyewards).ratio()
                     if match_ratio > similar_sentence:
                         if match_ratio > 0.8:
+                            print (full_search,tool_kyewards,match_ratio)
                             similar_sentence = match_ratio
                             sentace_pick     = full_search
                             tool_pick        = tool
@@ -530,6 +530,10 @@ if __name__ == '__main__':
     # sentences  = r'find identical from layer sett on field mama2'
     # sentences  = r'convert DEM_haifa to polygon'
     # sentences  = r'go to haifa'
+    # sentences =  r'fdwseef to polyline'
+
+
+    # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     aprx_path  = r"CURRENT"
     aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
@@ -541,7 +545,7 @@ if __name__ == '__main__':
     InputsManager = InputManager  ()
     Tools_store   = Tools_manager ()
     Mysentance    = Sentance      (sentences)
-    get_Responed  = Responed      ()
+    # get_Responed  = Responed      ()
 
     Tools_store.insertTools(tools_archive)
 
@@ -572,10 +576,12 @@ if __name__ == '__main__':
     InputsManager.Get_main_and_seconed_fields()
 
 
-    get_Responed.update()
+    # get_Responed.update()
 
     out_put         = create_out_put(InputsManager)
     input_layer     = InputsManager.mainInput.data_source
+
+    print (Tools_store.picked_tool.ToolActivate)
     tool_activation = Tools_store.picked_tool.ToolActivate
     if InputsManager.seconfInputs:
         seconfInputs    = InputsManager.seconfInputs.data_source 
@@ -590,7 +596,7 @@ if __name__ == '__main__':
 
 
     arcpy.AddMessage (f'hello human, i find that ur input name: {input_layer}')
-    arcpy.AddMessage (f'and i find that ur output name: {out_put}')
+    arcpy.AddMessage (f'Tool picked: {Tools_store.picked_tool.id_}')
     # if out_put:arcpy.AddMessage (f'i will send the result to: {out_put}')
 
 
@@ -688,7 +694,8 @@ if __name__ == '__main__':
         if folder_out.endswith('gdb'):
             folder_out = os.path.dirname(folder_out)
 
-        tool_activation (input_layer,main_a_fields ,data_source,'false',folder_out,'GDB')
+
+        tool_activation (input_layer,main_a_fields ,[data_source],'false',folder_out,'GDB')
 
 
     if Tools_store.picked_tool.id_ == 'raster to polygon':
