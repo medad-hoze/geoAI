@@ -75,11 +75,11 @@ class Tools_manager():
         print ('remove tools if all layers are not match the tool input parameters')
         if InputsManager.allRaster:
             print ('all rasters')
-            before_len = len(self.all_tools)
+            before_len     = len(self.all_tools)
             self.all_tools = [tool for tool in self.all_tools if 'raster'  in tool.Geotypes]
-            after_len = len(self.all_tools)
+            after_len      = len(self.all_tools)
             print ('before: ' + str(before_len) + ' after: ' + str(after_len))
-            
+
             self.Get_len_tools()
 
         elif InputsManager.allVectors:
@@ -90,7 +90,19 @@ class Tools_manager():
             print ('before: ' + str(before_len) + ' after: ' + str(after_len))
             self.Get_len_tools()
         else:
+            # check if raster input have the must score
+            max_score = max([input_.score for input_ in InputsManager.all_inputs])
+            for input_ in InputsManager.all_inputs:
+                if max_score > 0.8:
+                    if int(input_.score) == int(max_score):
+                        print ('is raster input')
+                        if input_.geomType == 'raster':
+                            self.all_tools = [tool for tool in self.all_tools if 'raster' in tool.Geotypes]
+                            self.Get_len_tools()
             pass
+
+        
+
 
 class Tools():
 
@@ -118,14 +130,14 @@ class InputManager():
     def __init__(self):
         print ('InputManager')
 
-        self.mainInput          = None
-        self.seconfInputs       = None
-        self.allRaster          = False
-        self.allVectors         = False
-        self.countInputs        = 0
+        self.mainInput       = None
+        self.seconfInputs    = None
+        self.allRaster       = False
+        self.allVectors      = False
+        self.countInputs     = 0
 
-        self.main_a_field = None
-        self.main_b_field = None
+        self.main_a_field    = None
+        self.main_b_field    = None
 
         self.secoend_a_field = None
         self.secoend_b_field = None
@@ -195,6 +207,9 @@ class InputManager():
 
     def check_if_first_input(self):
         for input_ in self.all_inputs:
+            if not self.mainInput:
+                print ('no main input')
+                return 
             if input_.geomType not in Tools_store.picked_tool.Geotypes:
                 input_.Can_be_first_input =False
 
@@ -292,7 +307,7 @@ def get_all_layers_from_content(aprx_path = 'CURRENT'):
                 InputsManager.add_input(InputAprx(layer.name,'FC',layer.dataSource,is_output,type_geom))
             elif layer.isRasterLayer:
                 if layer.dataSource.endswith('tif'):
-                    InputsManager.add_input(InputAprx(layer.name,'TIF',layer.dataSource,is_output,'RASTER'))
+                    InputsManager.add_input(InputAprx(layer.name,'TIF',layer.dataSource,is_output,'raster'))
                 else:
                     InputsManager.add_input(InputAprx(layer.name,'raster',layer.dataSource,is_output,'gdb_RASTER'))
             else:
@@ -317,7 +332,7 @@ class Responed():
 
 
     def update(self):
-        
+
         self.len_fields_needed = Tools_store.picked_tool.fields
         self.len_fields_found  = InputsManager.countInputs
 
@@ -407,9 +422,11 @@ def FindInputs():
     for layer in InputsManager.all_inputs:
         index_in_text = 1
         for word in Mysentance.list_sentance:
-            layer_low  = layer.layer.lower()
-            word_lower = word.lower()
+            layer_low   = layer.layer.lower()
+            word_lower  = word.lower()
             match_ratio = SequenceMatcher(None, layer_low, word_lower).ratio()
+            if len(layer_low.split('.')) > 1:
+                layer_low = layer_low.split('.')[0]
             if match_ratio > 0.8:
                 layer.score = match_ratio
                 layer.index = index_in_text
@@ -435,7 +452,7 @@ def find_tool():
                     full_search = full_search.lower()
                     match_ratio = SequenceMatcher(None, full_search, tool_kyewards).ratio()
                     if match_ratio > similar_sentence:
-                        if match_ratio > 0.7:
+                        if match_ratio > 0.8:
                             similar_sentence = match_ratio
                             sentace_pick     = full_search
                             tool_pick        = tool
@@ -444,6 +461,8 @@ def find_tool():
     Mysentance.remove_str_sentance(sentace_pick)
     Tools_store.keep_chosen_tools(tool_pick)
     Tools_store.get_int_picked_tool()
+
+
 
 def match_fields_from_input_to_layer():
     for input_ in InputsManager.all_inputs:
@@ -485,6 +504,7 @@ def get_out_put_as_Input():
         and there is output in the inputs
         then the output is the input
     '''
+
     hightest_socre = [input_.score for input_ in InputsManager.all_inputs]
     if hightest_socre:
         hightest_socre = max(hightest_socre)
@@ -500,15 +520,16 @@ def get_out_put_as_Input():
 
 if __name__ == '__main__':
 
-    # sentences = arcpy.GetParameterAsText(0)
+    sentences = arcpy.GetParameterAsText(0)
 
     # sentences  = r'join field mama from layer sett with field id in layer test1 and transfer field pizza'
     # sentences  = r'create field blabla type long in sett'
     # sentences  = r'feature to point sett'
     # sentences  = r'delete test1 from layer sett'
     # sentences  = r'delete identical from layer sett on field mama2'
-    sentences  = r'find identical from layer sett on field mama2'
-    sentences  = r'find layers haifa from source C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
+    # sentences  = r'find identical from layer sett on field mama2'
+    # sentences  = r'convert DEM_haifa to polygon'
+    # sentences  = r'go to haifa'
 
     aprx_path  = r"CURRENT"
     aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
@@ -524,17 +545,19 @@ if __name__ == '__main__':
 
     Tools_store.insertTools(tools_archive)
 
-    get_all_layers_from_content(aprx_path)
-    get_out_put_as_Input       ()
 
-    InputsManager.__str__()
+    get_all_layers_from_content(aprx_path)
+
+    # InputsManager.__str__()
 
     Mysentance    = Sentance(sentences)
 
+
     InputsManager.Count_inputs()
-    Tools_store.remove_tools_by_inputLayers()
 
     FindInputs()
+    Tools_store.remove_tools_by_inputLayers()
+    get_out_put_as_Input       ()
     find_tool()
 
     InputsManager.check_if_first_input()
@@ -549,7 +572,6 @@ if __name__ == '__main__':
     InputsManager.Get_main_and_seconed_fields()
 
 
-   
     get_Responed.update()
 
     out_put         = create_out_put(InputsManager)
@@ -562,16 +584,17 @@ if __name__ == '__main__':
     # get_Responed  .__str__ ()
     # get_Responed  .__repr__()
     # InputsManager .__str__ ()
-    InputsManager .__repr__()
+    # InputsManager .__repr__()
     # Mysentance    .__str__ ()
-    Tools_store   .__repr__()
+    # Tools_store   .__repr__()
 
 
-    print (input_layer)
-    print (out_put)
+    arcpy.AddMessage (f'hello human, i find that ur input name: {input_layer}')
+    arcpy.AddMessage (f'and i find that ur output name: {out_put}')
+    # if out_put:arcpy.AddMessage (f'i will send the result to: {out_put}')
 
 
-    ##############################  TOOLS  ##############################
+    #############################  TOOLS  ##############################
 
     if Tools_store.picked_tool.id_  == 'join fields':
         params     = get_function_Join_Fields_params(field_name)
@@ -584,7 +607,7 @@ if __name__ == '__main__':
     if Tools_store.picked_tool.id_ == 'feature to point':
         type_Geom   = find_type_for_feature_to_point(sentences)
         tool_activation   (input_layer,out_put,type_Geom)
-        getLayerOnMap     (out_put,aprx_path)
+        getLayerOnMap     (out_put)
 
     if Tools_store.picked_tool.id_ == 'snap':
         input_second    = InputsManager.seconfInputs.data_source
@@ -617,7 +640,7 @@ if __name__ == '__main__':
         main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match]
         print (main_a_field)
         tool_activation(input_layer,main_a_field,out_put)
-        getLayerOnMap(out_put,aprx_path)
+        getLayerOnMap(out_put)
 
 
     if Tools_store.picked_tool.id_ =='find identical':
@@ -627,22 +650,22 @@ if __name__ == '__main__':
 
     if Tools_store.picked_tool.id_ in ('vertiex to point','topology','polygon to line','eliminate','split line by vertex','Feature_to_polygon'):
         tool_activation(input_layer,out_put)
-        getLayerOnMap(out_put,aprx_path)
+        getLayerOnMap(out_put)
 
 
     if (Tools_store.picked_tool.id_ == 'Spatial Join'):
         tool_activation(input_layer,seconfInputs,out_put)
-        getLayerOnMap(out_put,aprx_path)
+        getLayerOnMap(out_put)
     
 
     if Tools_store.picked_tool.id_ in ('Simplify','buffer'):
         tool_activation(input_layer,out_put,number)
-        getLayerOnMap(out_put,aprx_path)
+        getLayerOnMap(out_put)
 
 
     if Tools_store.picked_tool.id_ == 'intersect':
         tool_activation([input_layer,seconfInputs],out_put)
-        getLayerOnMap(out_put,aprx_path)
+        getLayerOnMap(out_put)
 
 
     if Tools_store.picked_tool.id_ == 'find layers':
@@ -677,7 +700,7 @@ if __name__ == '__main__':
         out_put = folder + '\\' + 'raster.shp'
 
         tool_activation(input_layer,out_put)
-        getLayerOnMap(out_put,aprx_path)
+        getLayerOnMap(out_put)
 
 
     
