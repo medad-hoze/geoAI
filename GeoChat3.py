@@ -267,13 +267,16 @@ class InputAprx():
 
     def is_empty(self):
         if self.type == 'FC' or self.type == 'SHP':
-            if arcpy.GetCount_management(self.data_source).getOutput(0) == '0':
+            if arcpy.Exists(self.data_source):
+                if arcpy.GetCount_management(self.data_source).getOutput(0) == '0':
+                    self.empty = True
+            else:
                 self.empty = True
 
     def add_fields(self):
-
-        if self.type == 'FC' or self.type == 'SHP':
-            self.fields_found = [[i.name,i.type,self.check_all_nulls(self.data_source,i.name)] for i in arcpy.ListFields(self.data_source)]
+        if arcpy.Exists(self.data_source):
+            if self.type == 'FC' or self.type == 'SHP':
+                self.fields_found = [[i.name,i.type,self.check_all_nulls(self.data_source,i.name)] for i in arcpy.ListFields(self.data_source)]
 
     @staticmethod
     def check_all_nulls(fc,field_name):
