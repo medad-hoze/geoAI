@@ -495,8 +495,7 @@ def find_tool():
                     full_search = full_search.lower()
                     match_ratio = SequenceMatcher(None, full_search, tool_kyewards).ratio()
                     if match_ratio > similar_sentence:
-                        if match_ratio > 0.8:
-                            print (tool.id_)
+                        if match_ratio > 0.78:
                             similar_sentence = match_ratio
                             sentace_pick     = full_search
                             tool_pick        = tool
@@ -593,7 +592,60 @@ def copyRights(version = '0.0.2'):
     |   to the following address: medadhoze@hotmail.com  |''')
 
 
+def check_geom_match(input_1,input_2):
+
+    shape_type1 = arcpy.Describe(input_1).shapeType
+    shape_type2 = arcpy.Describe(input_2).shapeType
+    if shape_type1 != shape_type2:
+        arcpy.AddMessage ('Geom of inputs are not match')
+        sys.exit(1)
+
+def add_field(fc,field,Type = 'TEXT'):
+    TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
+    if not TYPE:
+        arcpy.AddField_management (fc, field, Type, "", "", 500)
+
+
+def get_field_if_not_exists_create_field(input_layer):
+        main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match if i[0] != 'to']
+        if main_a_field:
+            main_a_field = main_a_field[0]
+        if not main_a_field:
+            add_field(input_layer,'TempField','LONG')
+            arcpy.CalculateField_management(input_layer,'TempField',1)
+            main_a_field = 'TempField'
+            return main_a_field,True
+        return main_a_field,False
+
+
+def found_claculation_methos():
+
+    values_calculate = {'min':['min','minimum'],
+                        'max':['max','maximum'],
+                        'sum':['sum'],
+                        'sub':['sub','subtract','reduce'],
+                        'mul':['mul','multiply'],
+                        'div':['div','divide'],
+                        'pow':['pow','power']}
+
+    best_score = 0
+    calc_method = None
+    for key,value in values_calculate.items():
+        for v in value:
+            for word in Mysentance.list_sentance:
+                word = word.lower()
+                match_ratio = SequenceMatcher(None, v, word).ratio()
+                if match_ratio > 0.7:
+                    if match_ratio > best_score:
+                        calc_method = key
+                        best_score = match_ratio
+    return calc_method
+
+
 if __name__ == '__main__':
+
+    copyRights(version = '0.0.3')
+    license_key()
 
     sentences = arcpy.GetParameterAsText(0)
 
@@ -609,6 +661,7 @@ if __name__ == '__main__':
     # sentences =  r'fdwseefefcewf'
     # sentences = r'out_put_1 to raster'
     # sentences = r'out_put_2 to line'
+    # sentences = r'calculate rdsfsdfer and Point_to_raster find the maximum value'
 
 
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
@@ -620,7 +673,7 @@ if __name__ == '__main__':
         print ('i have no sentance to work with') 
         sys.exit(1)
 
-    arcpy.AddMessage('Youe sentance is: ' + sentences)
+    arcpy.AddMessage('Your sentance is: ' + sentences)
 
     InputsManager = InputManager  ()
     Tools_store   = Tools_manager ()
@@ -629,10 +682,7 @@ if __name__ == '__main__':
 
     Tools_store.insertTools(tools_archive)
 
-
     get_all_layers_from_content(aprx_path)
-
-    # InputsManager.__str__()
 
     Mysentance    = Sentance(sentences)
 
@@ -647,9 +697,10 @@ if __name__ == '__main__':
     InputsManager.check_if_first_input()
 
 
-    number     = find_number_in_sentance  (Mysentance.sentance)
-    type_      = find_type_in_text        (Mysentance.list_sentance)
-    field_name = find_field_name          (Mysentance.sentance_full)
+    number      = find_number_in_sentance  (Mysentance.sentance)
+    type_       = find_type_in_text        (Mysentance.list_sentance)
+    field_name  = find_field_name          (Mysentance.sentance_full)
+    calc_method = found_claculation_methos()
 
     match_fields_from_input_to_layer()
 
@@ -745,6 +796,10 @@ if __name__ == '__main__':
     if (Tools_store.picked_tool.id_ == 'Spatial Join'):
         tool_activation(input_layer,seconfInputs,out_put)
         getLayerOnMap(out_put)
+
+    if (Tools_store.picked_tool.id_ == 'near'):
+        tool_activation(input_layer,seconfInputs,number)
+        getLayerOnMap(out_put)
     
 
     if Tools_store.picked_tool.id_ in ('Simplify','buffer'):
@@ -793,6 +848,33 @@ if __name__ == '__main__':
         getLayerOnMap(out_put)
 
 
+    if Tools_store.picked_tool.id_ == 'append':
+        check_geom_match(input_layer,seconfInputs)
+        tool_activation([seconfInputs],input_layer,'NO_TEST')
+        getLayerOnMap(out_put)
     
 
-    
+    if Tools_store.picked_tool.id_ == 'point to raster':
+        out_put = os.path.dirname(os.path.dirname(input_layer)) + '\\' + 'Point_to_raster.tif'
+        main_a_field,is_changed = get_field_if_not_exists_create_field(input_layer)
+
+        arcpy.AddMessage (f'will use {main_a_field} as value field')
+        arcpy.AddMessage (f'you will found out put at: {out_put}')
+        arcpy.AddMessage (f'field of Z values        : {main_a_field}')
+        if number:
+            arcpy.AddMessage (f'cell size: {number}') 
+        else:
+            arcpy.AddMessage (f'cell size defualt is: 1 meters')
+
+        if arcpy.Exists(out_put):arcpy.Delete_management(out_put)
+        tool_activation(input_layer,main_a_field,out_put,number)
+        getLayerOnMap(out_put)
+        if is_changed:arcpy.DeleteField_management(input_layer,main_a_field)
+
+
+    if Tools_store.picked_tool.id_ == 'raster Calculator':
+        out_put = os.path.dirname(input_layer) + '\\' + 'Raster_Calculator.tif'
+        arcpy.AddMessage (f'you will found out put at: {out_put}')
+        arcpy.AddMessage (f'calc_method: {calc_method}')
+        arcpy.AddMessage (f'seconed raster: {seconfInputs}')
+        tool_activation([input_layer,seconfInputs],calc_method,out_put)

@@ -19,6 +19,8 @@ from FindLayers                   import find_layers_main,data_SETL
 from Clip_managment               import multiClip
 from Raster_to_Polygon_tool       import RasterToPolygon
 from Multi_FieldJoin_tool         import join_field
+from PointToRaster_tool           import Rasrize_point
+from Raster_Calculator_tool       import Raster_Calculator_tool
 
 def add_field(fc,field,Type = 'TEXT'):
     TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
@@ -62,7 +64,17 @@ tools_archive = [
                                                                                                 'to point','to points']             ,1,0,True],
     ['raster to polygon'    ,RasterToPolygon                 ,['raster']                     ,['raster to polygon','to polygon',
                                                                                                 'as raster','to shp',
-                                                                                                'to shapefile','to layer']          ,1,0,True]                                                                      
+                                                                                                'to shapefile','to layer']          ,1,0,True],
+    ['point to line'        ,arcpy.PointsToLine_management    ,['Point']                        ,['point to line','to line']        ,1,0,True],
+    ['near'                 ,arcpy.Near_analysis              ,['Polygon','Polyline','Point']   ,['near','close to', 'close']       ,2,0,False],
+
+    ['append'               ,arcpy.Append_management          ,['Polygon','Polyline','Point']   ,['append','append layers','add to'
+                                                                                                ,'add layer']                       ,2,0,False], 
+    ['point to raster'      ,Rasrize_point                    ,['Point']                       ,['point to raster','to raster']     ,1,1,False],
+    ['raster Calculator'    ,Raster_Calculator_tool           ,['raster']                      ,['raster calculator','calculator',
+                                                                                                'get max','get min','get max',
+                                                                                                'get mean','get avareage',
+                                                                                                'calculate raster']                  ,2,0,True]                                                                                                                                                 
 ]
 
 
