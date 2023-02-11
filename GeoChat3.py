@@ -9,7 +9,7 @@ import operator
 from operator import itemgetter
 from ToolsSafe import tools_archive
 from Utils import *
-import os
+import os,requests
 from FindLayers import data_SETL
 
 
@@ -40,8 +40,12 @@ class Tools_manager():
         
         print ('number of tools from source: ' + str(self.len_InputTools))
         print ('current tools: ' + str(self.len_all_current_tools))
-        print ('picked tool: ' + str(self.picked_tool.id_))
-        print ('number of outputs needed: ' + str(self.int_picked_tool))
+        if self.picked_tool:
+            print ('picked tool: ' + str(self.picked_tool.id_))
+            print ('number of outputs needed: ' + str(self.int_picked_tool))
+        else:
+            print ('no tool find')
+        
 
     def __str__(self) -> str:
         for tool in self.all_tools:
@@ -98,9 +102,11 @@ class Tools_manager():
                         if input_.geomType == 'raster':
                             self.all_tools = [tool for tool in self.all_tools if 'raster' in tool.Geotypes]
                             self.Get_len_tools()
+
+            # check if tool geom fit with input
+
             pass
 
-        
 
 
 class Tools():
@@ -207,10 +213,9 @@ class InputManager():
     def check_if_first_input(self):
         for input_ in self.all_inputs:
             if not self.mainInput:
-                print ('no main input')
-                return 
-            if input_.geomType not in Tools_store.picked_tool.Geotypes:
-                input_.Can_be_first_input =False
+                if Tools_store.picked_tool:
+                    if input_.geomType not in Tools_store.picked_tool.Geotypes:
+                        input_.Can_be_first_input =False
 
 
     def Get_main_and_seconed_inputs(self):
@@ -320,7 +325,7 @@ def get_all_layers_from_content(aprx_path = 'CURRENT'):
 
 class Responed():
     def __init__(self):
-
+        
         self.error_Not_Enough_inputs = False
         self.error_Not_Enough_fields = False
 
@@ -334,6 +339,19 @@ class Responed():
 
 
     def update(self):
+ 
+
+        if Tools_store.picked_tool == '':
+            print ('error: no main tool found')
+            arcpy.AddMessage('No main tool found, improve your query')
+            sys.exit(1)
+        else:
+            print ('error: no main input found')
+            if Tools_store.picked_tool == '':
+                print ('error: no main tool found')
+                arcpy.AddMessage('No main input or tool found, plz save aprex, and improve your query')
+                sys.exit(1)
+
 
         self.len_fields_needed = Tools_store.picked_tool.fields
         self.len_fields_found  = InputsManager.countInputs
@@ -437,6 +455,28 @@ def FindInputs():
 
     Mysentance.Remove_from_sentance (words_pick)
 
+
+def is_1_input_and_fit_geometry(tool):
+    '''
+    if tool can have 1 input and the must score input is not in his
+    geometry type then return False, for example: will know if: to line, is from polygon or point 
+    with the user input
+    '''
+    if tool.num_input == 1:
+        geometry_  = None
+        save_score = 0
+        for input_ in InputsManager.all_inputs:
+            score = input_.score
+            if score > 0.8:
+                if score > save_score:
+                    save_score = score
+                    geometry_ = input_.geomType
+        if geometry_:
+            if geometry_ not in tool.Geotypes:
+                return False
+    return True
+
+
 def find_tool():
 
     similar_sentence = 0
@@ -451,11 +491,12 @@ def find_tool():
             full_search += words + ' '
             for tool in Tools_store.all_tools:
                 for tool_kyewards in tool.keywords:
+                    if not is_1_input_and_fit_geometry(tool):continue
                     full_search = full_search.lower()
                     match_ratio = SequenceMatcher(None, full_search, tool_kyewards).ratio()
                     if match_ratio > similar_sentence:
                         if match_ratio > 0.8:
-                            print (full_search,tool_kyewards,match_ratio)
+                            print (tool.id_)
                             similar_sentence = match_ratio
                             sentace_pick     = full_search
                             tool_pick        = tool
@@ -521,6 +562,37 @@ def get_out_put_as_Input():
             new_input.isOutput = False
 
 
+def license_key():
+    try:
+        response = requests.get("https://medad-hoze.github.io/kakal/main.html")
+
+        def get_onclick_value(text,value_catch):
+            match = re.search(f'// {value_catch} = (.*)', text)
+            if match:
+                onclick_value = match.group(1)
+                return onclick_value.strip()
+
+        conf = get_onclick_value(response.text,value_catch = 'use_key_all')
+        if conf != 'True':
+            arcpy.AddMessage('license key is not active')
+            sys.exit(1)
+    except:
+        arcpy.AddMessage('####################################################',2)
+        arcpy.AddMessage('#########  internet connection is needed ###########',2)
+        arcpy.AddMessage('####################################################',2)
+        sys.exit(1)
+
+
+
+def copyRights(version = '0.0.2'):
+    arcpy.AddMessage (f''' 
+    -------------------------------------------------
+    |                version: {version}                  |
+    |       Made by: MYYGeoAi , all rights reserved      |
+    |    if bag was found, plz add a pic of the error    |
+    |   to the following address: medadhoze@hotmail.com  |''')
+
+
 if __name__ == '__main__':
 
     sentences = arcpy.GetParameterAsText(0)
@@ -534,6 +606,9 @@ if __name__ == '__main__':
     # sentences  = r'convert DEM_haifa to polygon'
     # sentences  = r'go to haifa'
     # sentences =  r'fdwseef to polyline'
+    # sentences =  r'fdwseefefcewf'
+    # sentences = r'out_put_1 to raster'
+    # sentences = r'out_put_2 to line'
 
 
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
@@ -545,10 +620,12 @@ if __name__ == '__main__':
         print ('i have no sentance to work with') 
         sys.exit(1)
 
+    arcpy.AddMessage('Youe sentance is: ' + sentences)
+
     InputsManager = InputManager  ()
     Tools_store   = Tools_manager ()
     Mysentance    = Sentance      (sentences)
-    # get_Responed  = Responed      ()
+    get_Responed  = Responed      ()
 
     Tools_store.insertTools(tools_archive)
 
@@ -569,6 +646,7 @@ if __name__ == '__main__':
 
     InputsManager.check_if_first_input()
 
+
     number     = find_number_in_sentance  (Mysentance.sentance)
     type_      = find_type_in_text        (Mysentance.list_sentance)
     field_name = find_field_name          (Mysentance.sentance_full)
@@ -579,7 +657,7 @@ if __name__ == '__main__':
     InputsManager.Get_main_and_seconed_fields()
 
 
-    # get_Responed.update()
+    get_Responed.update()
 
     out_put         = create_out_put(InputsManager)
     input_layer     = InputsManager.mainInput.data_source
@@ -657,7 +735,9 @@ if __name__ == '__main__':
         print (main_a_field)
         tool_activation(input_layer,main_a_field)
 
-    if Tools_store.picked_tool.id_ in ('vertiex to point','topology','polygon to line','eliminate','split line by vertex','Feature_to_polygon'):
+    layer_1_input_1_out = ('point to line','vertiex to point','topology','polygon to line',
+                            'eliminate','split line by vertex','Feature_to_polygon')
+    if Tools_store.picked_tool.id_ in layer_1_input_1_out:
         tool_activation(input_layer,out_put)
         getLayerOnMap(out_put)
 
