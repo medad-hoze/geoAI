@@ -20,6 +20,36 @@ def check_lists(list1,list2):
     return False
 
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def isHebrew(name_input:str) -> bool:
+    '''
+    Check if the input string is in Hebrew, if so return True
+    '''
+    return any("\u0590" <= c <= "\u05EA" for c in name_input)
+
+def get_settlement_to_layer(data_SETL,name_input:str,out_put:str) -> str:
+
+    if arcpy.Exists(out_put):arcpy.Delete_management(out_put)
+
+    ishebrew    = isHebrew(name_input)
+    field_check = 'SETL_NAME' if ishebrew else 'SETL_NAME_LTN'
+
+    df            = pd.DataFrame(data_SETL,columns= ['SETL_NAME','SETL_NAME_LTN','SETL_CODE','SHAPE'])
+    df['Similar'] = df[field_check].apply(lambda x: similar(x,name_input))
+    df            = df[df['Similar'] > 0.5]
+    
+    if not df.empty:
+        df   = df[df['Similar'] ==  df['Similar'].max()]
+        geom = arcpy.FromWKT(df['SHAPE'].values[0])
+        arcpy.CopyFeatures_management(geom,out_put)
+        return out_put
+    else:
+        arcpy.AddMessage('No settlement found')
+
+
 class Tools_manager():
     all_tools = []
     def __init__(self):
@@ -642,6 +672,21 @@ def found_claculation_methos():
     return calc_method
 
 
+def get_layer_and_field_from_city(data_SETL,input_layer,sentences):
+
+    city          = find_city(data_SETL,sentences)
+    gdb_temp      = tempfile.gettempdir() + '\\' + 'temp.gdb'
+    if arcpy.Exists(gdb_temp): arcpy.Delete_management(gdb_temp)
+    arcpy.CreateFileGDB_management(tempfile.gettempdir(),'temp.gdb')
+    
+    input_layer        = gdb_temp + '\\' + 'temp_city'
+    get_settlement_to_layer(data_SETL,city,input_layer)
+    main_a_fields   = ['OBJECTID']
+    if field_name:
+        main_a_fields  = [field_name]
+
+    return input_layer,main_a_fields
+
 if __name__ == '__main__':
 
     copyRights(version = '0.0.3')
@@ -662,12 +707,12 @@ if __name__ == '__main__':
     # sentences = r'out_put_1 to raster'
     # sentences = r'out_put_2 to line'
     # sentences = r'calculate rdsfsdfer and Point_to_raster find the maximum value'
-
+    # sentences = r'clip all layers from haifa in folder: C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     aprx_path  = r"CURRENT"
-    aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
+    # aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
 
     if not sentences:
         print ('i have no sentance to work with') 
@@ -711,9 +756,12 @@ if __name__ == '__main__':
     get_Responed.update()
 
     out_put         = create_out_put(InputsManager)
-    input_layer     = InputsManager.mainInput.data_source
+    input_layer = ''
+    if InputsManager.mainInput:
+        input_layer     = InputsManager.mainInput.data_source
 
     print (Tools_store.picked_tool.ToolActivate)
+
     tool_activation = Tools_store.picked_tool.ToolActivate
     if InputsManager.seconfInputs:
         seconfInputs    = InputsManager.seconfInputs.data_source 
@@ -726,8 +774,8 @@ if __name__ == '__main__':
     # Mysentance    .__str__ ()
     # Tools_store   .__repr__()
 
-
-    arcpy.AddMessage (f'hello human, i find that ur input name: {input_layer}')
+    if input_layer:
+        arcpy.AddMessage (f'hello human, i find that ur input name: {input_layer}')
     arcpy.AddMessage (f'Tool picked: {Tools_store.picked_tool.id_}')
     # if out_put:arcpy.AddMessage (f'i will send the result to: {out_put}')
 
@@ -822,7 +870,11 @@ if __name__ == '__main__':
 
     if Tools_store.picked_tool.id_ == 'multiClip':
 
-        main_a_fields  = [i[0] for i in InputsManager.mainInput.fields_match]
+        if InputsManager.mainInput:
+            main_a_fields  = [i[0] for i in InputsManager.mainInput.fields_match]
+        else:
+            input_layer,main_a_fields =  get_layer_and_field_from_city(data_SETL,input_layer,sentences)
+
         data_source = find_data_source(sentences)
 
         if data_source == '':
@@ -832,8 +884,7 @@ if __name__ == '__main__':
         if folder_out.endswith('gdb'):
             folder_out = os.path.dirname(folder_out)
 
-
-        tool_activation (input_layer,main_a_fields ,[data_source],'false',folder_out,'GDB')
+        tool_activation (input_layer,main_a_fields ,[data_source],'false',folder_out,'GDB',False)
 
 
     if Tools_store.picked_tool.id_ == 'raster to polygon':

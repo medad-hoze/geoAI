@@ -80,6 +80,7 @@ def getLayerOnMap(path_layer):
 
 def create_out_put(InputsManager):
 
+    if not InputsManager.mainInput: return 
     gdb     = os.path.dirname(InputsManager.mainInput.data_source)
     out_put = [input_.layer for input_ in InputsManager.all_inputs if 'out_put' in input_.layer]
 

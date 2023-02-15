@@ -307,7 +307,7 @@ def input_paramater_chack(param,polyon = True, polyline = True, point = True):
     return Geom_type
 
 
-def multiClip(cliped_layer,dissolve_fields,layers_in,mask,folder_out,type_out):
+def multiClip(cliped_layer,dissolve_fields,layers_in,mask,folder_out,type_out,delete_temp = True):
     #############################################################################################################
 
     desc       = arcpy.Describe(cliped_layer)
@@ -319,8 +319,10 @@ def multiClip(cliped_layer,dissolve_fields,layers_in,mask,folder_out,type_out):
     # # # # # # # #    create temp folder and gdb    # # # # # # # #
     gdb_temp      = tempfile.gettempdir() + '\\' + 'temp.gdb'
     cutting_mask  = gdb_temp              + '\\' + 'cutting_maask'
-    if arcpy.Exists(gdb_temp): arcpy.Delete_management(gdb_temp)
-    arcpy.CreateFileGDB_management(tempfile.gettempdir(),'temp.gdb')
+    if delete_temp:
+        print ('delete temp')
+        if arcpy.Exists(gdb_temp): arcpy.Delete_management(gdb_temp)
+        arcpy.CreateFileGDB_management(tempfile.gettempdir(),'temp.gdb')
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
     # # # # # # # # # # #    if raster    # # # # # # # # # # # # # #
@@ -344,6 +346,8 @@ def multiClip(cliped_layer,dissolve_fields,layers_in,mask,folder_out,type_out):
         except:
             arcpy.Dissolve_management     (cliped_layer,cutting_mask, multi_part="SINGLE_PART")
         if mask == "true":  updateEnvelope (cutting_mask, buffer=0)
+        print (dissolve_fields)
+        print (OID_)
         if OID_ in dissolve_fields:
             dissolve_fields.remove(OID_)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

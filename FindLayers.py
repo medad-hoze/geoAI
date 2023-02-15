@@ -578,6 +578,7 @@ def get_settlement_to_layer(data_SETL,name_input:str,out_put:str) -> str:
         arcpy.CopyFeatures_management(geom,out_put)
         return out_put
     else:
+        print ('No settlement found')
         arcpy.AddMessage('No settlement found')
 
 def zoom_in(layer):
