@@ -267,8 +267,6 @@ class InputManager():
                     if input_.layer != self.mainInput.layer:
                         self.seconfInputs = input_
 
-
-
 class InputAprx():
 
     all_inputs              = []
@@ -704,19 +702,21 @@ if __name__ == '__main__':
     # sentences  = r'find identical from layer sett on field mama2'
     # sentences  = r'convert DEM_haifa to polygon'
     # sentences  = r'go to haifa'
-    # sentences =  r'fdwseef to polyline'
-    # sentences =  r'fdwseefefcewf'
-    # sentences = r'out_put_1 to raster'
-    # sentences = r'out_put_2 to line'
-    # sentences = r'calculate rdsfsdfer and Point_to_raster find the maximum value'
-    # sentences = r'clip all layers from haifa in folder: C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
-
-    # sentences = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
-    # sentences = r'plz rank polygon so bottom date will be presented'
+    # sentences  = r'fdwseef to polyline'
+    # sentences  = r'fdwseefefcewf'
+    # sentences  = r'out_put_1 to raster'
+    # sentences  = r'out_put_2 to line'
+    # sentences  = r'calculate rdsfsdfer and Point_to_raster find the maximum value'
+    # sentences  = r'clip all layers from haifa in folder: C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
+    # sentences  = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
+    # sentences  = r'plz rank polygon so bottom date will be presented'
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
+    sentences  = r'go to tel aviv'
+
+
     aprx_path  = r"CURRENT"
-    # aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
+    aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
 
     if not sentences:
         print ('i have no sentance to work with') 

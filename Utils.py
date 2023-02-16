@@ -119,16 +119,22 @@ def find_city(data_SETL,sentance):
     cities = [i[1] for i in data_SETL]
     sentance = sentance.split()
     city_final = ''
+    sentences        = [''] + sentance
+    length     = len(sentences)
     for city in cities:
         similar_field = 0
-        for word in sentance:
-            word = word.lower()
-            city = city.lower()
-            match_ratio = SequenceMatcher(None, word, city).ratio()
-            if match_ratio > similar_field:
-                similar_field =  match_ratio
-                if match_ratio > 0.7:
-                    city_final = city
+        for i in range(length):
+            full_search = ''
+            for j in range(i+1,length):
+                words = sentences[j]
+                full_search += words + ' '
+                word = full_search.lower()
+                city = city.lower()
+                match_ratio = SequenceMatcher(None, word, city).ratio()
+                if match_ratio > similar_field:
+                    similar_field =  match_ratio
+                    if match_ratio > 0.7:
+                        city_final = city
     return city_final
 
 
