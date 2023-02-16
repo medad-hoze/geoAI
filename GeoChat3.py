@@ -687,6 +687,8 @@ def get_layer_and_field_from_city(data_SETL,input_layer,sentences):
 
     return input_layer,main_a_fields
 
+
+
 if __name__ == '__main__':
 
     copyRights(version = '0.0.3')
@@ -710,11 +712,11 @@ if __name__ == '__main__':
     # sentences = r'clip all layers from haifa in folder: C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     # sentences = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
-
+    sentences = r'plz rank polygon so bottom date will be presented'
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     aprx_path  = r"CURRENT"
-    # aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
+    aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
 
     if not sentences:
         print ('i have no sentance to work with') 
@@ -934,11 +936,16 @@ if __name__ == '__main__':
 
 
     if Tools_store.picked_tool.id_ == 'create compilation':
+        pick_method   = get_new_or_old (Mysentance.list_sentance)
+        print (pick_method)
         main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match]
-        tool_activation(input_layer,main_a_field,out_put)
+        tool_activation(input_layer,main_a_field,out_put,pick_method)
         getLayerOnMap(out_put)
 
 
     if Tools_store.picked_tool.id_ == 'download parcels':
         data_source = find_data_source(sentences)
         tool_activation(data_source)
+
+
+

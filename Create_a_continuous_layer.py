@@ -101,7 +101,7 @@ def del_columns(data_all,drop_fields):
     return data_all
 
 
-def create_compilation(path,date_field,out_put):
+def create_compilation(path,date_field,out_put,ascending = False):
 
     '''
         [INFO] : create a continuous layer, based in priority of date
@@ -111,6 +111,9 @@ def create_compilation(path,date_field,out_put):
 
         [OUTPUT] : out_put   = path to output layer
     '''
+    if not ascending:
+        ascending = False
+
     intersect = r'in_memory' + '\\' + 'intersect'
 
     if arcpy.Exists(intersect):
@@ -119,7 +122,7 @@ def create_compilation(path,date_field,out_put):
     arcpy.Intersect_analysis([path], intersect, 'ALL', '', 'INPUT')
     field_id   = 'FID_' + os.path.basename(path)
     df         = Read_Fc(intersect)
-    df['rank'] = df.groupby('SHAPE@WKT')[date_field].rank(method='first', ascending=False)
+    df['rank'] = df.groupby('SHAPE@WKT')[date_field].rank(method='first', ascending=ascending)
     df_del     = df[df['rank'] != 1][[field_id,'SHAPE@WKT']]
     list_del   = df_del[[field_id,'SHAPE@WKT']].values.tolist()
 

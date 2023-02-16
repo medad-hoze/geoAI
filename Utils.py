@@ -150,3 +150,22 @@ def find_type_for_feature_to_point(sentance):
         type_ = 'INSIDE'
     
     return type_
+
+
+def get_new_or_old(sentences):
+
+    values_calculate = {False:['first','newest','new','recent','upper','up','last','top'],
+                        True:['oldest','down','bottom','old','lower']}
+
+    best_score = 0
+    pick_method = None
+    for key,value in values_calculate.items():
+        for v in value:
+            for word in sentences:
+                word = word.lower()
+                match_ratio = SequenceMatcher(None, v, word).ratio()
+                if match_ratio > 0.7:
+                    if match_ratio > best_score:
+                        pick_method = key
+                        best_score = match_ratio
+    return pick_method
