@@ -712,11 +712,11 @@ if __name__ == '__main__':
     # sentences  = r'plz rank polygon so bottom date will be presented'
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
-    sentences  = r'go to tel aviv'
+    # sentences  = r'go to tel aviv'
 
 
     aprx_path  = r"CURRENT"
-    aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
+    # aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
 
     if not sentences:
         print ('i have no sentance to work with') 
