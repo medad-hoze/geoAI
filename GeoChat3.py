@@ -128,8 +128,9 @@ class Tools_manager():
             for input_ in InputsManager.all_inputs:
                 if max_score > 0.8:
                     if int(input_.score) == int(max_score):
-                        print ('is raster input')
                         if input_.geomType == 'raster':
+                            print (max_score,input_.__str__())
+                            print ('is raster input')
                             self.all_tools = [tool for tool in self.all_tools if 'raster' in tool.Geotypes]
                             self.Get_len_tools()
 
@@ -686,6 +687,20 @@ def get_layer_and_field_from_city(data_SETL,input_layer,sentences):
     return input_layer,main_a_fields
 
 
+def getLayerOnMap(path_layer):
+    if not arcpy.Exists(path_layer):return 
+    try:
+        aprx = arcpy.mp.ArcGISProject('CURRENT')
+        aprxMap = aprx.listMaps("Map")[0] 
+        lyr = aprxMap.addDataFromPath(path_layer)
+        # aprxMap.addLayer(lyr)
+        aprx.activeView
+
+        del aprxMap
+        del aprx
+    except:
+        pass
+
 
 if __name__ == '__main__':
 
@@ -711,6 +726,8 @@ if __name__ == '__main__':
     # sentences  = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
     # sentences  = r'plz rank polygon so bottom date will be presented'
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
+
+    # sentences  = r'remove field TYPE from out_put_4'
 
     # sentences  = r'go to tel aviv'
 
@@ -945,7 +962,17 @@ if __name__ == '__main__':
 
     if Tools_store.picked_tool.id_ == 'download parcels':
         data_source = find_data_source(sentences)
-        tool_activation(data_source)
+        out_put = tool_activation(data_source)
+        getLayerOnMap(out_put)
 
+    if Tools_store.picked_tool.id_ == 'remove field':
+        main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match]
+        if main_a_field:
+            main_a_field = main_a_field[0]
+        else:
+            arcpy.AddMessage ('didnt find field to remove')
+            sys.exit(1)
 
-
+        print (input_layer,main_a_field)
+        tool_activation(input_layer,main_a_field)
+        getLayerOnMap(out_put)
