@@ -712,11 +712,11 @@ if __name__ == '__main__':
     # sentences = r'clip all layers from haifa in folder: C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     # sentences = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
-    sentences = r'plz rank polygon so bottom date will be presented'
+    # sentences = r'plz rank polygon so bottom date will be presented'
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     aprx_path  = r"CURRENT"
-    aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
+    # aprx_path  = r"C:\Users\Administrator\Desktop\GeoML\Geom_.aprx"
 
     if not sentences:
         print ('i have no sentance to work with') 
