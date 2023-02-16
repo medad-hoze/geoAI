@@ -21,6 +21,10 @@ from Raster_to_Polygon_tool       import RasterToPolygon
 from Multi_FieldJoin_tool         import join_field
 from PointToRaster_tool           import Rasrize_point
 from Raster_Calculator_tool       import Raster_Calculator_tool
+from Create_a_continuous_layer    import create_compilation
+from download_parcels             import download_parcels_data
+
+
 
 def add_field(fc,field,Type = 'TEXT'):
     TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
@@ -74,7 +78,12 @@ tools_archive = [
     ['raster Calculator'    ,Raster_Calculator_tool           ,['raster']                      ,['raster calculator','calculator',
                                                                                                 'get max','get min','get max',
                                                                                                 'get mean','get avareage',
-                                                                                                'calculate raster']                  ,2,0,True]                                                                                                                                                 
+                                                                                                'calculate raster']                   ,2,0,True],
+    ['create compilation'   ,create_compilation               ,['Polygon']                     ,['create compilation','overlay',
+                                                                                                'compilation','continuous',
+                                                                                                 'overlap','rank','by date']           ,1,1,True],
+    ['download parcels',    download_parcels_data             ,['Polygon','Polyline','Point']    ,['download parcels','download',
+                                                                                                 'cadaster']                           ,0,0,False],                                                                                                                                              
 ]
 
 

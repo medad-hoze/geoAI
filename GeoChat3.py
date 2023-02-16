@@ -709,6 +709,8 @@ if __name__ == '__main__':
     # sentences = r'calculate rdsfsdfer and Point_to_raster find the maximum value'
     # sentences = r'clip all layers from haifa in folder: C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
+    # sentences = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
+
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
 
     aprx_path  = r"CURRENT"
@@ -929,3 +931,14 @@ if __name__ == '__main__':
         arcpy.AddMessage (f'calc_method: {calc_method}')
         arcpy.AddMessage (f'seconed raster: {seconfInputs}')
         tool_activation([input_layer,seconfInputs],calc_method,out_put)
+
+
+    if Tools_store.picked_tool.id_ == 'create compilation':
+        main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match]
+        tool_activation(input_layer,main_a_field,out_put)
+        getLayerOnMap(out_put)
+
+
+    if Tools_store.picked_tool.id_ == 'download parcels':
+        data_source = find_data_source(sentences)
+        tool_activation(data_source)
