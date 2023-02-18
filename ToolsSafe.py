@@ -23,7 +23,7 @@ from PointToRaster_tool           import Rasrize_point
 from Raster_Calculator_tool       import Raster_Calculator_tool
 from Create_a_continuous_layer    import create_compilation
 from download_parcels             import download_parcels_data
-
+from Network_analysis             import find_shortest_path
 
 
 def add_field(fc,field,Type = 'TEXT'):
@@ -42,7 +42,7 @@ tools_archive = [
     ['polygon to line'      ,PolygonToLine                   ,['Polygon']                    ,['to line','polygon to line',
                                                                                                'to polyline']                      ,1,0,True],
     ['erase'                ,analysis_Erase                  ,['Polygon','Polyline','Point'] ,['delete','erase']                   ,2,0,True],
-    ['topology'             ,CreateTopology                  ,['Polygon']                    ,['topology','create topology']       ,2,0,True],
+    ['topology'             ,CreateTopology                  ,['Polygon']                    ,['topology','create topology']       ,1,0,True],
     ['vertiex to point'     ,FeatureVerticesToPoints         ,['Polygon','Polyline']         ,['vertiex to point',      
                                                                                                'vertices to point','get vertices'] ,1,0,True],
     ['snap'                 ,Snap                            ,['Polygon','Polyline']         ,['snap']                             ,2,0,True],
@@ -78,12 +78,15 @@ tools_archive = [
     ['raster Calculator'    ,Raster_Calculator_tool           ,['raster']                      ,['raster calculator','calculator',
                                                                                                 'get max','get min','get max',
                                                                                                 'get mean','get avareage',
-                                                                                                'calculate raster']                   ,2,0,True],
+                                                                                                'calculate raster']                 ,2,0,True],
     ['create compilation'   ,create_compilation               ,['Polygon']                     ,['create compilation','overlay',
                                                                                                 'compilation','continuous',
-                                                                                                 'overlap','rank','by date']           ,1,1,True],
+                                                                                                 'overlap','rank','by date']         ,1,1,True],
     ['download parcels',    download_parcels_data             ,['Polygon','Polyline','Point']    ,['download parcels','download',
-                                                                                                 'cadaster']                           ,0,0,False],                                                                                                                                              
+                                                                                                 'cadaster']                         ,0,0,False],
+    ['remove field' ,       arcpy.DeleteField_management      ,['Polygon','Polyline','Point']    ,['remove field','delete field']    ,1,1,False],
+    ['find shortest path',  find_shortest_path                , ['Polyline']                    ,['shortest path','network',
+                                                                                                   'shortest']                       ,2,0,True ],                                                                                                                                            
 ]
 
 

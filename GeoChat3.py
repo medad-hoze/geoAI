@@ -691,7 +691,7 @@ def getLayerOnMap(path_layer):
     if not arcpy.Exists(path_layer):return 
     try:
         aprx = arcpy.mp.ArcGISProject('CURRENT')
-        aprxMap = aprx.listMaps("Map")[0] 
+        aprxMap = aprx.listMaps("*")[0] 
         lyr = aprxMap.addDataFromPath(path_layer)
         # aprxMap.addLayer(lyr)
         aprx.activeView
@@ -726,6 +726,7 @@ if __name__ == '__main__':
     # sentences  = r'download parcels to C:\Users\Administrator\Desktop\GeoML\data'
     # sentences  = r'plz rank polygon so bottom date will be presented'
     # sentences  = r'clip fdwseef from C:\Users\Administrator\Desktop\ArcpyToolsBox\test'
+    # sentences  = r'get topology problems polygon'
 
     # sentences  = r'remove field TYPE from out_put_4'
 
@@ -975,4 +976,9 @@ if __name__ == '__main__':
 
         print (input_layer,main_a_field)
         tool_activation(input_layer,main_a_field)
+        getLayerOnMap(out_put)
+
+    if Tools_store.picked_tool.id_ == 'find shortest path':
+
+        tool_activation(input_layer,seconfInputs,out_put,'')
         getLayerOnMap(out_put)

@@ -63,21 +63,6 @@ def find_type_in_text(sentences:list):
 
 
 
-def getLayerOnMap(path_layer):
-    if not arcpy.Exists(path_layer):return 
-    try:
-        aprx = arcpy.mp.ArcGISProject('CURRENT')
-        aprxMap = aprx.listMaps("Map")[0] 
-        lyr = aprxMap.addDataFromPath(path_layer)
-        # aprxMap.addLayer(lyr)
-        aprx.activeView
-
-        del aprxMap
-        del aprx
-    except:
-        pass
-
-
 def create_out_put(InputsManager):
 
     if not InputsManager.mainInput: return 
