@@ -11,7 +11,7 @@ from ToolsSafe import tools_archive
 from Utils import *
 import os,requests
 from FindLayers import data_SETL
-
+import random
 
 def check_lists(list1,list2):
     for i in list1:
@@ -702,6 +702,7 @@ def getLayerOnMap(path_layer):
         pass
 
 
+
 if __name__ == '__main__':
 
     copyRights(version = '0.0.3')
@@ -872,7 +873,7 @@ if __name__ == '__main__':
         getLayerOnMap(out_put)
     
 
-    if Tools_store.picked_tool.id_ in ('Simplify','buffer'):
+    if Tools_store.picked_tool.id_ in ('simplify','buffer'):
         tool_activation(input_layer,out_put,number)
         getLayerOnMap(out_put)
 
@@ -980,5 +981,22 @@ if __name__ == '__main__':
 
     if Tools_store.picked_tool.id_ == 'find shortest path':
 
-        tool_activation(input_layer,seconfInputs,out_put,'')
+        main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match]
+        if main_a_field:
+            main_a_field = main_a_field[0]
+        else:
+            main_a_field = ''
+
+        tool_activation(input_layer,seconfInputs,out_put,main_a_field)
         getLayerOnMap(out_put)
+
+
+    if Tools_store.picked_tool.id_ == 'insert random num':
+        main_a_field  = [i[0] for i in InputsManager.mainInput.fields_match]
+        if main_a_field:
+            main_a_field = main_a_field[0]
+        else:
+            arcpy.AddMessage ('didnt find field name')
+            sys.exit(1)
+
+        tool_activation(input_layer,sentences,main_a_field)

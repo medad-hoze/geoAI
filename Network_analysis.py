@@ -9,9 +9,6 @@ import math,sys,os
 
 import requests
 
-
-
-
 def create_output(fc,Out_put):
 
     if not Out_put == '':
@@ -212,14 +209,14 @@ def prepreate_data(path,border,path_finish):
 
 
 
-def find_shortest_path(path,first_end,path_finish,wieghtField = ''):
+def find_shortest_path(path,first_end,path_finish,wieghtField = '',border = ''):
     # # # Input
 
     if wieghtField == '':
         arcpy.AddMessage('No weight field selected, using distance')
      
     # # # main
-    nodes,network  = prepreate_data      (path,'',path_finish)
+    nodes,network  = prepreate_data      (path,border,path_finish)
     node_start_end = get_first_end_nodes (first_end,nodes)
     pair_list      = get_node_edges      (network,wieghtField)
 

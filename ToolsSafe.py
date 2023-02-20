@@ -24,7 +24,7 @@ from Raster_Calculator_tool       import Raster_Calculator_tool
 from Create_a_continuous_layer    import create_compilation
 from download_parcels             import download_parcels_data
 from Network_analysis             import find_shortest_path
-
+from Small_tools                  import insert_random_number_to_layer
 
 def add_field(fc,field,Type = 'TEXT'):
     TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
@@ -85,8 +85,10 @@ tools_archive = [
     ['download parcels',    download_parcels_data             ,['Polygon','Polyline','Point']    ,['download parcels','download',
                                                                                                  'cadaster']                         ,0,0,False],
     ['remove field' ,       arcpy.DeleteField_management      ,['Polygon','Polyline','Point']    ,['remove field','delete field']    ,1,1,False],
-    ['find shortest path',  find_shortest_path                , ['Polyline']                    ,['shortest path','network',
-                                                                                                   'shortest']                       ,2,0,True ],                                                                                                                                            
+    ['find shortest path',  find_shortest_path                ,['Polyline']                    ,['shortest path','network',
+                                                                                                   'shortest']                       ,2,0,True ],
+    ['insert random num',  insert_random_number_to_layer      ,['Polygon','Polyline','Point']  ,['random number','insert random',
+                                                                                                 'random']                           ,1,1,True ]                                                                                                                                        
 ]
 
 
