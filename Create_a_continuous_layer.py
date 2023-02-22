@@ -88,20 +88,16 @@ def Read_Fc(addr,num_rows = 9999999):
     return df
 
 
-def del_columns(data_all,drop_fields):
-    '''
-    delete columns from dataframe
-    '''
-    for i in drop_fields:
-        if i in data_all.columns:
-            print ('droping column: {}'.format(i))
-            data_all       = data_all.drop(i,axis = 1)
-        else:
-            print ('didnt find: {} in dataframe'.format(i))
-    return data_all
+def add_field(fc,field,Type = 'TEXT'):
+    try:
+        TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
+        if not TYPE:
+            arcpy.AddField_management (fc, field, Type, "", "", 500)
+    except:
+        arcpy.AddField_management (fc, field, Type, "", "", 500)
+	
 
-
-def create_compilation(path,date_field,out_put,ascending = False):
+def create_compilation(path,date_field,out_put, ascending = False):
 
     '''
         [INFO] : create a continuous layer, based in priority of date
@@ -111,31 +107,38 @@ def create_compilation(path,date_field,out_put,ascending = False):
 
         [OUTPUT] : out_put   = path to output layer
     '''
-    if not ascending:
-        ascending = False
+    
+    if arcpy.Exists(out_put):arcpy.Delete_management(out_put)
 
     intersect = r'in_memory' + '\\' + 'intersect'
 
     if arcpy.Exists(intersect):
         arcpy.Delete_management(intersect)
 
+    # add key so we know later which layer to delete
+    add_field (path,'KEY_',Type = 'LONG')
+    arcpy.CalculateField_management(path, 'KEY_', '!OBJECTID!', "PYTHON_9.3")
+
+    # intersect the layers and get the last layers by date in the intersect
     arcpy.Intersect_analysis([path], intersect, 'ALL', '', 'INPUT')
     field_id   = 'FID_' + os.path.basename(path)
     df         = Read_Fc(intersect)
-    df['rank'] = df.groupby('SHAPE@WKT')[date_field].rank(method='first', ascending=ascending)
+    df['rank'] = df.groupby('SHAPE@WKT')[date_field].rank(method='first', ascending= ascending)
     df_del     = df[df['rank'] != 1][[field_id,'SHAPE@WKT']]
     list_del   = df_del[[field_id,'SHAPE@WKT']].values.tolist()
 
     arcpy.Delete_management(intersect)
     arcpy.Select_analysis  (path,out_put)
 
-    with arcpy.da.UpdateCursor(out_put, ['OBJECTID','SHAPE@']) as cursor:
+    # delete the layers that are the last layers by date
+    with arcpy.da.UpdateCursor(out_put, ['KEY_','SHAPE@']) as cursor:
         for row in cursor:
             for del_lyr in list_del:
                 geom_del = arcpy.FromWKT(del_lyr[1])
                 id_del   = del_lyr[0]
-                if row[0] == del_lyr[0]:
+                if row[0] == id_del:
                     row[1] = row[1].difference(geom_del)
                     cursor.updateRow(row)
         del cursor
 
+    arcpy.DeleteField_management(out_put, ['KEY_'])

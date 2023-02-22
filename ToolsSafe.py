@@ -34,8 +34,7 @@ def add_field(fc,field,Type = 'TEXT'):
 
 tools_archive = [
     # '''
-    # id tool             ,activation tool                   ,type of tool input          ,        keywards       ,number of inputs\fields          have output
-                                                                                                                                                                        
+    # id tool             ,activation tool                   ,type of tool input          ,        keywards       ,number of inputs\fields          have output                                                                                                                                                                    
     # '''
 
     ['delete identical'     ,Delete_Identical_Byfield        ,['Polygon','Polyline','Point'] ,['delete identical']                 ,1,1,True],
