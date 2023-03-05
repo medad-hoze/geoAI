@@ -97,17 +97,23 @@ def add_field(fc,field,Type = 'TEXT'):
         arcpy.AddField_management (fc, field, Type, "", "", 500)
 	
 
-def create_compilation(path,date_field,out_put, ascending = False):
+def join_x(x):
+    li_ = x.values.tolist()
+    return str(li_)
+
+
+def create_compilation(path,date_field,out_put, by_old_date = False):
+    # # # #     RUN        # # # #
 
     '''
         [INFO] : create a continuous layer, based in priority of date
 
         [INPUT] : path       = path to layer
-                  date_field = field with date
+                    date_field = field with date
 
         [OUTPUT] : out_put   = path to output layer
     '''
-    
+
     if arcpy.Exists(out_put):arcpy.Delete_management(out_put)
 
     intersect = r'in_memory' + '\\' + 'intersect'
@@ -123,20 +129,22 @@ def create_compilation(path,date_field,out_put, ascending = False):
     arcpy.Intersect_analysis([path], intersect, 'ALL', '', 'INPUT')
     field_id   = 'FID_' + os.path.basename(path)
     df         = Read_Fc(intersect)
-    df['rank'] = df.groupby('SHAPE@WKT')[date_field].rank(method='first', ascending= ascending)
-    df_del     = df[df['rank'] != 1][[field_id,'SHAPE@WKT']]
-    list_del   = df_del[[field_id,'SHAPE@WKT']].values.tolist()
+    df['rank'] = df.groupby('SHAPE@WKT')[date_field].rank(method='first', ascending= by_old_date)
 
     arcpy.Delete_management(intersect)
     arcpy.Select_analysis  (path,out_put)
 
+    df_del       = df[df['rank'] != 1][[field_id,'SHAPE@WKT']]
+    df_del       = df_del.groupby(field_id)['SHAPE@WKT'].apply(join_x).reset_index()
+    df_del.index = df_del[field_id]
+    del_index    = df_del[['SHAPE@WKT']].to_dict('index')
+
     # delete the layers that are the last layers by date
     with arcpy.da.UpdateCursor(out_put, ['KEY_','SHAPE@']) as cursor:
         for row in cursor:
-            for del_lyr in list_del:
-                geom_del = arcpy.FromWKT(del_lyr[1])
-                id_del   = del_lyr[0]
-                if row[0] == id_del:
+            if del_index.get(row[0]):
+                for del_lyr in eval(del_index[row[0]]['SHAPE@WKT']):
+                    geom_del = arcpy.FromWKT(del_lyr)
                     row[1] = row[1].difference(geom_del)
                     cursor.updateRow(row)
         del cursor

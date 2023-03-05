@@ -858,7 +858,7 @@ if __name__ == '__main__':
         tool_activation(input_layer,main_a_field)
 
     layer_1_input_1_out = ('point to line','vertiex to point','topology','polygon to line',
-                            'eliminate','split line by vertex','Feature_to_polygon')
+                            'eliminate','split line by vertex','Feature_to_polygon','thiessen polygon')
     if Tools_store.picked_tool.id_ in layer_1_input_1_out:
         tool_activation(input_layer,out_put)
         getLayerOnMap(out_put)
