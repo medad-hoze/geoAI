@@ -706,7 +706,7 @@ def getLayerOnMap(path_layer):
 if __name__ == '__main__':
 
     copyRights(version = '0.0.3')
-    license_key()
+    # license_key()
 
     sentences = arcpy.GetParameterAsText(0)
 
@@ -858,7 +858,7 @@ if __name__ == '__main__':
         tool_activation(input_layer,main_a_field)
 
     layer_1_input_1_out = ('point to line','vertiex to point','topology','polygon to line',
-                            'eliminate','split line by vertex','Feature_to_polygon','thiessen polygon')
+                            'eliminate','split line by vertex','Feature_to_polygon')
     if Tools_store.picked_tool.id_ in layer_1_input_1_out:
         tool_activation(input_layer,out_put)
         getLayerOnMap(out_put)
@@ -873,7 +873,7 @@ if __name__ == '__main__':
         getLayerOnMap(out_put)
     
 
-    if Tools_store.picked_tool.id_ in ('simplify','buffer'):
+    if Tools_store.picked_tool.id_ in ('simplify','buffer','split line by dista'):
         tool_activation(input_layer,out_put,number)
         getLayerOnMap(out_put)
 

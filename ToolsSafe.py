@@ -25,7 +25,7 @@ from Create_a_continuous_layer    import create_compilation
 from download_parcels             import download_parcels_data
 from Network_analysis             import find_shortest_path
 from Small_tools                  import insert_random_number_to_layer
-from Thiessen_Polygons            import create_thiessen_polygon
+from Split_Line_by_distance       import split_line_by_distance
 
 def add_field(fc,field,Type = 'TEXT'):
     TYPE = [i.name for i in arcpy.ListFields(fc) if i.name == field]
@@ -89,8 +89,10 @@ tools_archive = [
                                                                                                    'shortest']                       ,2,0,True ],
     ['insert random num',  insert_random_number_to_layer      ,['Polygon','Polyline','Point']  ,['random number','insert random',
                                                                                                  'random']                           ,1,1,True ],
-    ['thiessen polygon' ,create_thiessen_polygon           ,['Point']                        ,['thiessen polygon','voronoi polygons',
-                                                                                                 'closest area'],                     1,0,True ],                                                                                                                                       
+    ['split line by dista', split_line_by_distance            , ['Polyline']                   ,['split line by distance',
+                                                                                                 'split by distance', 'split equal',
+                                                                                                 'equal intervals','equal',
+                                                                                                 'intervals']                       ,1,0,True ],                                                                                                                                      
 ]
 
 
